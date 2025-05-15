@@ -32,33 +32,11 @@ public class PasscodeTest extends BaseTest {
             passcodePage.enterPasscode("123456");
             passcodePage.enterPasscode("123456");
             test.pass("Passcode entered successfully");
-        } catch (Exception e) {
-            test.fail("Test failed due to exception: " + e.getMessage());
-            // Optionally adding stack trace details
-            test.fail(e);
-            throw e;  // re-throw to mark the test as failed in TestNG
-        }
-    }
-
-    @Test(description = "Validate Create Wallet Biometric")
-    public void biometricConfirmationTest() {
-        try {
             test.info("Starting test: biometricConfirmationTest");
             BiometricConfirmationPage biometricConfirmationPage = new BiometricConfirmationPage();
             Assert.assertTrue(biometricConfirmationPage.isBiometricLoginDisplayed(), "Biometric Login text not displayed!");
             biometricConfirmationPage.tapOnDenyButton();
             test.pass("Deny button clicked successfully");
-        } catch (Exception e) {
-            test.fail("Test failed due to exception: " + e.getMessage());
-            // Optionally adding stack trace details
-            test.fail(e);
-            throw e;  // re-throw to mark the test as failed in TestNG
-        }
-    }
-
-    @Test(description = "Validate Create Wallet Notification")
-    public void notificationTest() {
-        try {
             test.info("Starting test: notificationTest");
             NotificationPage notificationPage = new NotificationPage();
             Assert.assertEquals(notificationPage.getKeepUpWithMarketText(), "Keep up with the market!", "Market text does not match!");

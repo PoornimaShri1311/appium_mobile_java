@@ -12,7 +12,7 @@ public class TrustWalletLaunchPage extends BasePage {
     private static final Logger logger = LogManager.getLogger(TrustWalletLaunchPage.class);
     private final WaitUtils waitUtils = new WaitUtils(30);
     // Locators for elements on the Trust Wallet launch page
-    @AndroidFindBy(id = "com.wallet.crypto.trustapp:id/CreateNewWalletButton")
+    @AndroidFindBy(xpath = "//android.widget.TextView[@text='Create new wallet']")
     private WebElement createNewWallet;
 
     // Constructor to initialize the page elements
@@ -24,7 +24,7 @@ public class TrustWalletLaunchPage extends BasePage {
     // Action methods to interact with elements on the launch page
 
     public void clickCreateNewWalletButton() {
-        waitUtils.waitForVisibility(createNewWallet).click();
+        waitUtils.waitForElementToBeClickableAndClick(createNewWallet);
         logger.info("Clicking on Create New Wallet button");
     }
 
