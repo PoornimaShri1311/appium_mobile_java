@@ -10,7 +10,7 @@ import pages.TrustWalletLaunchPage;
 
 public class PasscodeTest extends BaseTest {
 
-    //    @Test(description = "Validate Create Wallet Launch")
+    @Test(description = "Validate Create Wallet Launch")
     public void trustWalletTest() {
         try {
             test.info("Starting test: trustWalletTest");
