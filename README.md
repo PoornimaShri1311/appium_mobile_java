@@ -56,5 +56,7 @@ The following features are part of future roadmap:
 2. Add the APK at `src/apps/android/latest.apk`
 3. Install dependencies:
    ```bash
-   mvn test -Dtest=PasscodeTest
+   Option 1 : mvn test -Dtest=PasscodeTest
+   Option 2 : testng.xml > Run
+   
 
