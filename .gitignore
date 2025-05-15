@@ -1,0 +1,9 @@
+screenshots/
+reports/
+.idea/
+*.iml
+src/apps/android/latest.apk
+# Ignore build output folders
+target/
+# Ignore logs folder
+logs/
