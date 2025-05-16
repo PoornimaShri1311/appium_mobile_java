@@ -3,10 +3,7 @@ package tests;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import pages.BiometricConfirmationPage;
-import pages.NotificationPage;
-import pages.PasscodePage;
-import pages.TrustWalletLaunchPage;
+import pages.*;
 
 public class PasscodeTest extends BaseTest {
 
@@ -17,6 +14,10 @@ public class PasscodeTest extends BaseTest {
             TrustWalletLaunchPage trustWalletLaunchPage = new TrustWalletLaunchPage();
             trustWalletLaunchPage.clickCreateNewWalletButton();
             test.pass("Clicked on Create New Wallet successfully");
+            PasscodePage passcodePage = new PasscodePage();
+            passcodePage.isCreatePasscodeTitleDisplayed();
+            test.pass("Create Passcode title displayed!");
+
         } catch (Exception e) {
             test.fail("Test failed due to exception: " + e.getMessage());
             test.fail(e);
@@ -30,7 +31,6 @@ public class PasscodeTest extends BaseTest {
             TrustWalletLaunchPage trustWalletLaunchPage = new TrustWalletLaunchPage();
             trustWalletLaunchPage.clickCreateNewWalletButton();
             test.pass("Clicked on Create New Wallet successfully");
-            test.info("Starting test: createPasscode with passcode: " + passcode);
             PasscodePage passcodePage = new PasscodePage();
             passcodePage.enterPasscode(passcode);
             passcodePage.enterPasscode(passcode);
@@ -47,7 +47,16 @@ public class PasscodeTest extends BaseTest {
             Assert.assertEquals(notificationPage.getKeepUpWithMarketText(), "Keep up with the market!", "Market text does not match!");
             notificationPage.isEnableNotificationsDisplayed();
             notificationPage.clickSkipLater();
+            notificationPage.clickSkipLater();
             test.pass("Skip Later button clicked successfully");
+
+            HomePage homePage = new HomePage();
+            // Assert label is visible
+            Assert.assertTrue(homePage.isHomeLabelDisplayed(), "Home label is not displayed");
+
+            // Print or assert text
+            Assert.assertEquals(homePage.getHomeLabelText(), "Home");
+            test.pass("Home Page verified");
         } catch (Exception e) {
             test.fail("Test failed due to exception: " + e.getMessage());
             test.fail(e);
