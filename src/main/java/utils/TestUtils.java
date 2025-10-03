@@ -29,8 +29,8 @@ public class TestUtils {
             bildHomePage.performSearchWithTap(searchTerm);
             test.pass("Successfully performed search with touch tap at coordinates (993, 2153)");
             
-            // Wait for results to load
-            Thread.sleep(2000);
+            // Wait for results to load using smart wait utility
+            SmartWaitHelper.quickWaitForSearchResults(test);
             test.info("Verifying search execution with touch tap method");
             
             // Collect and verify results
@@ -94,7 +94,8 @@ public class TestUtils {
                 test.pass("Successfully clicked on BILD Premium element");
                 
                 // Wait for page to load
-                Thread.sleep(3000);
+                // Use smart wait utility for premium element visibility
+                SmartWaitHelper.quickWaitForPremiumElements(test);
                 
                 // Verify account exists TextView
                 boolean isAccountTextDisplayed = bildHomePage.isAccountExistsTextViewDisplayed();

@@ -10,6 +10,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import io.appium.java_client.AppiumDriver;
 import utils.TouchActionUtils;
+import utils.WaitUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,8 +53,13 @@ public class BildHomeSearchActions implements ISearchActions {
             
             pageActions.enterText(searchField, searchTerm);
             
-            // Wait for search suggestions to appear
-            Thread.sleep(1000);
+            // Wait for search suggestions to appear using smart wait
+            WaitUtils waitUtils = new WaitUtils(5);
+            try {
+                waitUtils.waitForElementsToBePresent(By.xpath("//*[contains(@class, 'suggestion') or contains(@class, 'dropdown') or contains(@text, '" + searchTerm + "')]"));
+            } catch (Exception e) {
+                // Suggestions may not appear immediately, continue
+            }
             
             logger.info("Search performed successfully for: " + searchTerm);
             
@@ -79,7 +85,13 @@ public class BildHomeSearchActions implements ISearchActions {
         List<WebElement> results = new ArrayList<>();
         
         try {
-            Thread.sleep(ApplicationConstants.DELAY_SEARCH_EXECUTION); // Wait for results to load
+            // Wait for search results to load using smart wait
+            WaitUtils waitUtils = new WaitUtils(ApplicationConstants.DELAY_SEARCH_EXECUTION / 1000);
+            try {
+                waitUtils.waitForElementsToBePresent(By.xpath("//*[contains(@class, 'result') or contains(@class, 'item') or contains(@class, 'article')]"));
+            } catch (Exception e) {
+                // Results may take time to appear, continue with execution
+            }
             
             // Target the specific results panel
             String panelXPath = ApplicationConstants.XPATH_ANDROIDX_COMPOSEVIEW + "/android.view.View/android.view.View/android.view.View/android.view.View[1]";
@@ -244,10 +256,12 @@ public class BildHomeSearchActions implements ISearchActions {
             logger.info("Entered '" + searchTerm + "' in search field");
             
             // Step 2: Wait for results to appear (no Enter key needed)
+            // Wait for results to load properly
+            WaitUtils waitUtils = new WaitUtils(10);
             try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                waitUtils.waitForElementsToBePresent(By.xpath("//*[contains(@class, 'result') or contains(@class, 'item')]"));
+            } catch (Exception e) {
+                // Continue even if results take time to load
             }
             
             // Step 3: Collect results from the specific panel
