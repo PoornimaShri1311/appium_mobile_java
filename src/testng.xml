@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
-<suite name="SampleMobileAutomation" parallel="tests" thread-count="1">
+<suite name="BildMobileAutomation" parallel="tests" thread-count="2">
     <!-- Add your listener class here -->
     <listeners>
         <listener class-name="listeners.ExtentTestNGListener"/>
+        <listener class-name="listeners.AnnotationTransformer"/>
     </listeners>
-
-    <test name="Test">
-        <parameter name="platformName" value="Android"/>
+    <test name="BildAppTests">
+<!--        <parameter name="platformName" value="Android"/>-->
+        <parameter name="appiumServer" value="http://127.0.0.1:4723/"/>
         <classes>
-            <class name="tests.PasscodeTest"/>
+            <class name="tests.BildHomePageTest"/>
         </classes>
     </test>
 </suite>
-

@@ -1,36 +1,36 @@
 package utils;
 
+import factories.DependencyFactory;
 import io.appium.java_client.AppiumDriver;
-import org.openqa.selenium.remote.DesiredCapabilities;
-import java.net.MalformedURLException;
-import java.net.URL;
+import interfaces.IDriverManager;
 
+/**
+ * DriverUtils - Legacy wrapper for backward compatibility
+ * Delegates to the new DriverManager through DependencyFactory
+ * @deprecated Use DependencyFactory.getInstance().getDriverManager() instead
+ */
+@Deprecated
 public class DriverUtils {
 
-    private static AppiumDriver driver;
+    private static IDriverManager getDriverManager() {
+        return DependencyFactory.getInstance().getDriverManager();
+    }
 
     public static void initializeDriver() {
-        DesiredCapabilities capabilities= CapabilitiesManager.getCapabilities();
-
-        try {
-            driver = new AppiumDriver(new URL("http://127.0.0.1:4725/"), capabilities);
-
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Appium server URL is invalid", e);
-        }
+        getDriverManager().initializeDriver();
     }
 
     public static AppiumDriver getDriver() {
-        if (driver == null) {
-            throw new IllegalStateException("Driver not initialized. Please call initializeDriver first.");
-        }
-        return driver;
+        return getDriverManager().getDriver();
     }
 
     public static void quitDriver() {
-        if (driver != null) {
-            driver.quit();
-            driver = null;
-        }
+        getDriverManager().quitDriver();
+        // Reset factory to clean up all dependencies
+        DependencyFactory.resetInstance();
+    }
+    
+    public static boolean isDriverInitialized() {
+        return getDriverManager().isDriverInitialized();
     }
 }

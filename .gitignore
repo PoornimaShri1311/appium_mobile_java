@@ -1,9 +1,42 @@
+# Generated folders
 screenshots/
 reports/
+logs/
+target/
+
+# IDE files
 .idea/
 *.iml
-src/apps/android/latest.apk
-# Ignore build output folders
-target/
-# Ignore logs folder
-logs/
+.vscode/
+.project
+.classpath
+.settings/
+
+# APK files (too large for git)
+*.apk
+src/apps/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~.nib
+
+# Maven
+dependency-reduced-pom.xml
+
+# Test output
+test-output/
+allure-results/
+
+# Environment specific files
+.env

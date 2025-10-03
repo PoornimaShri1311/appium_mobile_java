@@ -1,0 +1,143 @@
+# BILD Mobile Framework - Docker CI Environment
+# This Dockerfile creates a containerized environment for testing the CI pipeline locally
+
+FROM ubuntu:20.04
+
+# Avoid interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set environment variables
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV ANDROID_HOME=/opt/android-sdk
+ENV PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin
+ENV NODE_VERSION=18
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    unzip \
+    git \
+    openjdk-11-jdk \
+    maven \
+    qemu-kvm \
+    libvirt-daemon-system \
+    libvirt-clients \
+    bridge-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
+    && apt-get install -y nodejs
+
+# Install Android SDK
+RUN mkdir -p ${ANDROID_HOME} \
+    && cd ${ANDROID_HOME} \
+    && wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip \
+    && unzip -q commandlinetools-linux-8512546_latest.zip \
+    && mkdir -p cmdline-tools/latest \
+    && mv cmdline-tools/* cmdline-tools/latest/ \
+    && rm commandlinetools-linux-8512546_latest.zip
+
+# Accept Android SDK licenses and install required packages
+RUN yes | sdkmanager --licenses \
+    && sdkmanager "platform-tools" "platforms;android-29" "platforms;android-30" \
+    && sdkmanager "system-images;android-29;google_apis;x86_64" \
+    && sdkmanager "system-images;android-30;google_apis;x86_64" \
+    && sdkmanager "emulator"
+
+# Install Appium
+RUN npm install -g appium@2.x \
+    && appium driver install uiautomator2
+
+# Create working directory
+WORKDIR /app
+
+# Copy framework files
+COPY . .
+
+# Create CI configuration
+RUN mkdir -p src/test/resources && \
+    echo "# Docker CI Configuration" > src/test/resources/capabilities-docker.properties && \
+    echo "appPackage=com.netbiscuits.bild.android" >> src/test/resources/capabilities-docker.properties && \
+    echo "appActivity=de.bild.android.app.MainActivity" >> src/test/resources/capabilities-docker.properties && \
+    echo "platformName=Android" >> src/test/resources/capabilities-docker.properties && \
+    echo "deviceName=Android_Docker_Emulator" >> src/test/resources/capabilities-docker.properties && \
+    echo "automationName=UiAutomator2" >> src/test/resources/capabilities-docker.properties && \
+    echo "udid=emulator-5554" >> src/test/resources/capabilities-docker.properties && \
+    echo "autoGrantPermissions=true" >> src/test/resources/capabilities-docker.properties && \
+    echo "noReset=true" >> src/test/resources/capabilities-docker.properties && \
+    echo "newCommandTimeout=300" >> src/test/resources/capabilities-docker.properties && \
+    echo "appiumServer=http://127.0.0.1:4723/wd/hub" >> src/test/resources/capabilities-docker.properties
+
+# Compile the framework
+RUN mvn clean compile -q
+
+# Create startup script
+RUN echo '#!/bin/bash' > /app/start-ci.sh && \
+    echo 'set -e' >> /app/start-ci.sh && \
+    echo 'echo "🐳 Starting BILD Mobile CI in Docker"' >> /app/start-ci.sh && \
+    echo 'echo "=================================="' >> /app/start-ci.sh && \
+    echo '' >> /app/start-ci.sh && \
+    echo '# Start Appium server in background' >> /app/start-ci.sh && \
+    echo 'appium server --port 4723 --base-path /wd/hub --allow-cors &' >> /app/start-ci.sh && \
+    echo 'APPIUM_PID=$!' >> /app/start-ci.sh && \
+    echo '' >> /app/start-ci.sh && \
+    echo '# Wait for Appium to start' >> /app/start-ci.sh && \
+    echo 'echo "Waiting for Appium server..."' >> /app/start-ci.sh && \
+    echo 'for i in {1..30}; do' >> /app/start-ci.sh && \
+    echo '    if curl -s http://localhost:4723/wd/hub/status > /dev/null; then' >> /app/start-ci.sh && \
+    echo '        echo "✅ Appium server ready"' >> /app/start-ci.sh && \
+    echo '        break' >> /app/start-ci.sh && \
+    echo '    fi' >> /app/start-ci.sh && \
+    echo '    sleep 1' >> /app/start-ci.sh && \
+    echo 'done' >> /app/start-ci.sh && \
+    echo '' >> /app/start-ci.sh && \
+    echo '# Create AVD if it doesn'\''t exist' >> /app/start-ci.sh && \
+    echo 'if ! avdmanager list avd | grep -q "bild_ci_emulator"; then' >> /app/start-ci.sh && \
+    echo '    echo "Creating Android emulator..."' >> /app/start-ci.sh && \
+    echo '    echo "no" | avdmanager create avd -n bild_ci_emulator -k "system-images;android-29;google_apis;x86_64" -d "Nexus 6"' >> /app/start-ci.sh && \
+    echo 'fi' >> /app/start-ci.sh && \
+    echo '' >> /app/start-ci.sh && \
+    echo '# Start emulator in headless mode' >> /app/start-ci.sh && \
+    echo 'echo "Starting Android emulator..."' >> /app/start-ci.sh && \
+    echo 'emulator -avd bild_ci_emulator -no-window -no-audio -no-boot-anim &' >> /app/start-ci.sh && \
+    echo 'EMULATOR_PID=$!' >> /app/start-ci.sh && \
+    echo '' >> /app/start-ci.sh && \
+    echo '# Wait for emulator to boot' >> /app/start-ci.sh && \
+    echo 'echo "Waiting for emulator to boot..."' >> /app/start-ci.sh && \
+    echo 'adb wait-for-device shell '\''while [[ -z $(getprop sys.boot_completed | tr -d '"'"'\r'"'"') ]]; do sleep 1; done'\''' >> /app/start-ci.sh && \
+    echo 'echo "✅ Emulator ready"' >> /app/start-ci.sh && \
+    echo '' >> /app/start-ci.sh && \
+    echo '# Set environment variables' >> /app/start-ci.sh && \
+    echo 'export TEST_ENV=docker' >> /app/start-ci.sh && \
+    echo 'export MAVEN_OPTS="-Xmx2048m"' >> /app/start-ci.sh && \
+    echo '' >> /app/start-ci.sh && \
+    echo '# Run tests' >> /app/start-ci.sh && \
+    echo 'echo "🧪 Running BILD tests..."' >> /app/start-ci.sh && \
+    echo 'mvn test -Dtest=BildHomePageTest -Dcapabilities.file=capabilities-docker.properties -q' >> /app/start-ci.sh && \
+    echo '' >> /app/start-ci.sh && \
+    echo '# Cleanup function' >> /app/start-ci.sh && \
+    echo 'cleanup() {' >> /app/start-ci.sh && \
+    echo '    echo "🧹 Cleaning up..."' >> /app/start-ci.sh && \
+    echo '    kill $APPIUM_PID $EMULATOR_PID 2>/dev/null || true' >> /app/start-ci.sh && \
+    echo '    echo "✅ Cleanup completed"' >> /app/start-ci.sh && \
+    echo '}' >> /app/start-ci.sh && \
+    echo '' >> /app/start-ci.sh && \
+    echo '# Set trap for cleanup' >> /app/start-ci.sh && \
+    echo 'trap cleanup EXIT' >> /app/start-ci.sh && \
+    echo '' >> /app/start-ci.sh && \
+    echo '# Keep container running if in interactive mode' >> /app/start-ci.sh && \
+    echo 'if [ -t 0 ]; then' >> /app/start-ci.sh && \
+    echo '    echo "📱 Docker CI environment ready"' >> /app/start-ci.sh && \
+    echo '    echo "Appium: http://localhost:4723/wd/hub/status"' >> /app/start-ci.sh && \
+    echo '    echo "Press Ctrl+C to exit"' >> /app/start-ci.sh && \
+    echo '    while true; do sleep 1; done' >> /app/start-ci.sh && \
+    echo 'fi' >> /app/start-ci.sh && \
+    chmod +x /app/start-ci.sh
+
+# Expose Appium port
+EXPOSE 4723
+
+# Default command
+CMD ["/app/start-ci.sh"]

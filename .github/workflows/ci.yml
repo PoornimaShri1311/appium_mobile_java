@@ -1,0 +1,257 @@
+name: BILD Mobile Test Suite CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run tests daily at 2 AM UTC to catch environmental issues
+    - cron: '0 2 * * *'
+
+jobs:
+  android-tests:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        api-level: [29, 30]  # Android 10 & 11 for broader compatibility
+        arch: [x86_64]
+        
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 11
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        
+    - name: Cache Maven Dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Set up Node.js for Appium
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install Appium Server
+      run: |
+        npm install -g appium@2.x
+        appium driver install uiautomator2
+        
+    - name: Verify Appium Installation
+      run: |
+        appium --version
+        appium driver list --installed
+        
+    - name: Enable KVM (for faster emulator)
+      run: |
+        echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger --name-match=kvm
+        
+    - name: AVD Cache
+      uses: actions/cache@v3
+      id: avd-cache
+      with:
+        path: |
+          ~/.android/avd/*
+          ~/.android/adb*
+        key: avd-${{ matrix.api-level }}-${{ matrix.arch }}
+        
+    - name: Create AVD and Generate Snapshot for Caching
+      if: steps.avd-cache.outputs.cache-hit != 'true'
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: ${{ matrix.api-level }}
+        arch: ${{ matrix.arch }}
+        target: google_apis
+        force-avd-creation: false
+        emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        disable-animations: false
+        script: echo "Generated AVD snapshot for caching."
+        
+    - name: Configure Test Environment
+      run: |
+        # Create test configuration for CI environment
+        mkdir -p src/test/resources
+        
+        # Update capabilities for CI emulator
+        cat > src/test/resources/capabilities-ci.properties << EOF
+        # CI Environment Configuration for BILD App Tests
+        appPackage=com.netbiscuits.bild.android
+        appActivity=de.bild.android.app.MainActivity
+        platformName=Android
+        deviceName=Android_Emulator
+        automationName=UiAutomator2
+        udid=emulator-5554
+        autoGrantPermissions=true
+        noReset=false
+        fullReset=false
+        newCommandTimeout=300
+        appiumServer=http://127.0.0.1:4723/wd/hub
+        # CI-specific timeouts
+        androidInstallTimeout=120000
+        adbExecTimeout=60000
+        EOF
+        
+        # Update framework properties for CI
+        cat > src/test/resources/framework-ci.properties << EOF
+        # CI Framework Configuration
+        framework.name=BILD Mobile CI Framework
+        framework.version=2.0.0-CI
+        
+        # Extended timeouts for CI environment
+        implicit.wait=15
+        explicit.wait=45
+        page.load.timeout=45
+        
+        # Enhanced retry for CI stability
+        retry.failed.tests=true
+        retry.count=3
+        retry.delay.seconds=5
+        
+        # Screenshot configuration
+        screenshot.on.failure=true
+        screenshot.on.success=false
+        
+        # CI logging
+        log.level=INFO
+        
+        # Manual Appium management in CI
+        appium.server.auto.start=false
+        appium.server.host=127.0.0.1
+        appium.server.port=4723
+        appium.server.startup.timeout=60
+        EOF
+        
+    - name: Install BILD App (Mock APK for CI)
+      run: |
+        # For actual CI, you would download the BILD APK
+        # This creates a mock structure for demonstration
+        mkdir -p src/apps/android
+        
+        # Note: In real implementation, add BILD APK to repository or download from store
+        echo "# In production: Place BILD APK here or configure download from app store" > src/apps/android/README.md
+        
+    - name: Start Appium Server
+      run: |
+        # Start Appium server in background
+        appium server --port 4723 --base-path /wd/hub --allow-cors &
+        
+        # Wait for server to start
+        timeout 30 bash -c 'until curl -s http://localhost:4723/wd/hub/status; do sleep 1; done'
+        echo "Appium server started successfully"
+        
+    - name: Run Android Emulator and Execute Tests
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: ${{ matrix.api-level }}
+        arch: ${{ matrix.arch }}
+        target: google_apis
+        profile: Nexus 6
+        emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        disable-animations: true
+        script: |
+          # Wait for emulator to be ready
+          adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed | tr -d '\r') ]]; do sleep 1; done; input keyevent 82'
+          
+          # Show emulator info
+          adb devices -l
+          adb shell getprop ro.build.version.release
+          
+          # Set CI environment variables
+          export MAVEN_OPTS="-Xmx2048m"
+          export TEST_ENV=ci
+          
+          # Run Maven tests with CI profile
+          mvn clean compile -q
+          
+          # Run core BILD functionality tests
+          mvn test -Dtest=BildHomePageTest -Dcapabilities.file=capabilities-ci.properties -Dframework.file=framework-ci.properties -q
+          
+          # Run enhanced SOLID architecture tests
+          mvn test -Dtest=ImprovedBildHomePageTest -Dcapabilities.file=capabilities-ci.properties -Dframework.file=framework-ci.properties -q
+          
+    - name: Upload Test Reports
+      uses: actions/upload-artifact@v3
+      if: always()  # Upload reports even if tests fail
+      with:
+        name: test-reports-api${{ matrix.api-level }}
+        path: |
+          reports/
+          screenshots/
+          logs/
+          target/surefire-reports/
+        retention-days: 30
+        
+    - name: Upload Test Results
+      uses: dorny/test-reporter@v1
+      if: success() || failure()    # Run even if tests fail
+      with:
+        name: Test Results (API ${{ matrix.api-level }})
+        path: target/surefire-reports/*.xml
+        reporter: java-junit
+        
+    - name: Generate Test Summary
+      if: always()
+      run: |
+        echo "## 📱 BILD Mobile Test Results (API ${{ matrix.api-level }})" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f "reports/ExtentReport.html" ]; then
+          echo "✅ ExtentReports generated successfully" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ ExtentReports not found" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Count test results
+        if [ -d "target/surefire-reports" ]; then
+          TOTAL_TESTS=$(find target/surefire-reports -name "*.xml" -exec grep -h "tests=" {} \; | sed 's/.*tests="\([0-9]*\)".*/\1/' | paste -sd+ | bc)
+          FAILED_TESTS=$(find target/surefire-reports -name "*.xml" -exec grep -h "failures=" {} \; | sed 's/.*failures="\([0-9]*\)".*/\1/' | paste -sd+ | bc)
+          SKIPPED_TESTS=$(find target/surefire-reports -name "*.xml" -exec grep -h "skipped=" {} \; | sed 's/.*skipped="\([0-9]*\)".*/\1/' | paste -sd+ | bc)
+          
+          echo "📊 **Test Statistics:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Total Tests: ${TOTAL_TESTS:-0}" >> $GITHUB_STEP_SUMMARY
+          echo "- Failed Tests: ${FAILED_TESTS:-0}" >> $GITHUB_STEP_SUMMARY  
+          echo "- Skipped Tests: ${SKIPPED_TESTS:-0}" >> $GITHUB_STEP_SUMMARY
+          echo "- Passed Tests: $((${TOTAL_TESTS:-0} - ${FAILED_TESTS:-0} - ${SKIPPED_TESTS:-0}))" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Add framework info
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🛠️ **Environment Details:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Android API Level: ${{ matrix.api-level }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Architecture: ${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Java Version: $(java -version 2>&1 | head -n1)" >> $GITHUB_STEP_SUMMARY
+        echo "- Appium Version: $(appium --version)" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Cleanup
+      if: always()
+      run: |
+        # Stop Appium server
+        pkill -f appium || true
+        
+        # Clean up large files to save space
+        rm -rf ~/.gradle/caches/
+        rm -rf ~/.m2/repository/com/android/
+
+  notification:
+    runs-on: ubuntu-latest
+    needs: android-tests
+    if: always()
+    
+    steps:
+    - name: Test Results Notification
+      run: |
+        if [ "${{ needs.android-tests.result }}" == "success" ]; then
+          echo "🎉 All BILD mobile tests passed successfully!"
+        else
+          echo "❌ Some BILD mobile tests failed. Check the artifacts for details."
+          exit 1
+        fi
