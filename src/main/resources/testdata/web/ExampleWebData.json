@@ -1,0 +1,72 @@
+{
+  "webApplication": {
+    "baseUrl": "https://bild.de",
+    "pages": {
+      "homePage": {
+        "url": "/",
+        "title": "Aktuelle Nachrichten - BILD.de",
+        "elements": {
+          "searchBox": "#search-input",
+          "navigationMenu": ".main-nav",
+          "topNews": ".top-news-container"
+        }
+      },
+      "loginPage": {
+        "url": "/login",
+        "title": "Login - BILD.de",
+        "elements": {
+          "usernameField": "#username",
+          "passwordField": "#password",
+          "loginButton": "#login-btn"
+        }
+      }
+    }
+  },
+  "testData": {
+    "validUser": {
+      "username": "web.test@bild.de",
+      "password": "WebTest123",
+      "firstName": "Test",
+      "lastName": "User"
+    },
+    "invalidUser": {
+      "username": "invalid@test.com",
+      "password": "wrongpass",
+      "expectedError": "Login failed"
+    },
+    "searchQueries": [
+      {
+        "term": "Bundestag",
+        "category": "Politik",
+        "expectedResults": "> 5"
+      },
+      {
+        "term": "Bayern München", 
+        "category": "Sport",
+        "expectedResults": "> 3"
+      }
+    ]
+  },
+  "browserSettings": {
+    "defaultBrowser": "chrome",
+    "windowSize": {
+      "width": 1920,
+      "height": 1080
+    },
+    "timeouts": {
+      "pageLoad": 30,
+      "elementWait": 10,
+      "scriptTimeout": 30
+    }
+  },
+  "environments": {
+    "desktop": {
+      "resolutions": ["1920x1080", "1366x768", "1024x768"],
+      "browsers": ["chrome", "firefox", "edge"]
+    },
+    "mobile": {
+      "devices": ["iPhone 13", "Samsung Galaxy S21", "iPad"],
+      "orientations": ["portrait", "landscape"]
+    }
+  }
+}

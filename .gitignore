@@ -40,3 +40,7 @@ allure-results/
 
 # Environment specific files
 .env
+
+# Backup files
+/src/main/java/utils/.backup
+/backup-files

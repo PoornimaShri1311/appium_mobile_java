@@ -1,0 +1,59 @@
+{
+  "apiEndpoints": {
+    "news": {
+      "baseUrl": "https://api.bild.de/v1",
+      "endpoints": {
+        "getLatestNews": "/news/latest",
+        "getNewsByCategory": "/news/category/{categoryId}",
+        "searchNews": "/news/search?q={query}",
+        "getArticle": "/articles/{articleId}"
+      }
+    },
+    "user": {
+      "baseUrl": "https://api.bild.de/v1",
+      "endpoints": {
+        "login": "/auth/login",
+        "register": "/auth/register", 
+        "profile": "/user/profile",
+        "preferences": "/user/preferences"
+      }
+    }
+  },
+  "testData": {
+    "validCredentials": {
+      "username": "test.user@bild.de",
+      "password": "TestPassword123",
+      "expectedRole": "subscriber"
+    },
+    "invalidCredentials": {
+      "username": "invalid@bild.de", 
+      "password": "wrongpassword",
+      "expectedError": "Authentication failed"
+    },
+    "newsCategories": [
+      {
+        "id": "sport",
+        "name": "Sport",
+        "expectedArticleCount": "> 10"
+      },
+      {
+        "id": "politik",
+        "name": "Politik", 
+        "expectedArticleCount": "> 15"
+      }
+    ]
+  },
+  "requestHeaders": {
+    "contentType": "application/json",
+    "accept": "application/json",
+    "userAgent": "BILD-Mobile-App/2.1.0"
+  },
+  "responseValidation": {
+    "timeouts": {
+      "connection": 5000,
+      "read": 10000
+    },
+    "expectedStatusCodes": [200, 201, 204],
+    "mandatoryFields": ["id", "timestamp", "status"]
+  }
+}

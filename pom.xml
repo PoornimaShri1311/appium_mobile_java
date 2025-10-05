@@ -70,6 +70,23 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Mobile Accessibility Testing (Native approach) -->
+        <!-- Note: Using mobile-native accessibility checks instead of axe-core -->
+
+        <!-- JSON Processing for device matrix -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.15.2</version>
+        </dependency>
+
+        <!-- Parallel execution support -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.12.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -90,10 +107,142 @@
                 <version>3.2.2</version>
                 <configuration>
                     <suiteXmlFiles>
-                        <suiteXmlFile>src/testng.xml</suiteXmlFile>
+                        <suiteXmlFile>${testng.suite}</suiteXmlFile>
+                    </suiteXmlFiles>
+                    <systemPropertyVariables>
+                        <platform>${platform}</platform>
+                        <deviceName>${deviceName}</deviceName>
+                        <platformVersion>${platformVersion}</platformVersion>
+                        <parallel>${parallel}</parallel>
+                        <threadCount>${threadCount}</threadCount>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <!-- Failsafe plugin for integration tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.2.2</version>
+                <configuration>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>${testng.suite}</suiteXmlFile>
                     </suiteXmlFiles>
                 </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Exec plugin for utilities -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
             </plugin>
         </plugins>
     </build>
+
+    <!-- Maven Profiles for Different Execution Modes -->
+    <profiles>
+        <!-- Default Profile -->
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <testng.suite>testng.xml</testng.suite>
+                <platform>android</platform>
+                <deviceName>emulator-5554</deviceName>
+                <platformVersion>13.0</platformVersion>
+                <threadCount>1</threadCount>
+            </properties>
+        </profile>
+
+        <!-- Parallel Execution Profile -->
+        <profile>
+            <id>parallel</id>
+            <properties>
+                <testng.suite>testng.xml</testng.suite>
+                <threadCount>4</threadCount>
+            </properties>
+        </profile>
+
+        <!-- Smoke Tests Profile -->
+        <profile>
+            <id>smoke</id>
+            <properties>
+                <testng.suite>src/testng-smoke.xml</testng.suite>
+                <threadCount>2</threadCount>
+            </properties>
+        </profile>
+
+        <!-- Regression Tests Profile -->
+        <profile>
+            <id>regression</id>
+            <properties>
+                <testng.suite>src/testng-regression.xml</testng.suite>
+                <threadCount>4</threadCount>
+            </properties>
+        </profile>
+
+        <!-- Accessibility Tests Profile -->
+        <profile>
+            <id>accessibility</id>
+            <properties>
+                <testng.suite>src/testng-accessibility.xml</testng.suite>
+                <threadCount>1</threadCount>
+            </properties>
+        </profile>
+
+        <!-- Android Only Profile -->
+        <profile>
+            <id>android</id>
+            <properties>
+                <platform>android</platform>
+                <testng.suite>src/testng-android.xml</testng.suite>
+            </properties>
+        </profile>
+
+        <!-- iOS Only Profile -->
+        <profile>
+            <id>ios</id>
+            <properties>
+                <platform>ios</platform>
+                <testng.suite>src/testng-ios.xml</testng.suite>
+            </properties>
+        </profile>
+
+        <!-- CI Profile for GitHub Actions -->
+        <profile>
+            <id>ci</id>
+            <properties>
+                <testng.suite>src/testng-ci.xml</testng.suite>
+                <parallel>true</parallel>
+                <threadCount>2</threadCount>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/*Test.java</include>
+                            </includes>
+                            <excludes>
+                                <exclude>**/*IntegrationTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

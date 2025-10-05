@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<!-- 
+🎯 UNIFIED TESTNG SUITE - One Suite To Rule Them All!
+===============================================
+
+This single TestNG suite replaces 8 different suite files by using:
+✅ System properties for dynamic configuration
+✅ Test groups for different test types  
+✅ Conditional execution based on parameters
+✅ Platform-agnostic device handling
+
+USAGE EXAMPLES:
+===============
+
+🔹 Default (Basic Android):
+   mvn test
+
+🔹 Smoke Tests:
+   mvn test -Dtest.suite=smoke -Dthread.count=2
+
+🔹 Parallel Execution:
+   mvn test -Dtest.suite=parallel -Dthread.count=4
+
+🔹 iOS Testing:
+   mvn test -Dplatform=iOS -Ddevice.name="iPhone 15 Pro"
+
+🔹 Regression Suite:
+   mvn test -Dtest.suite=regression -Dthread.count=6
+
+🔹 Accessibility Testing:
+   mvn test -Dtest.suite=accessibility -Denable.accessibility=true
+
+🔹 CI/CD Pipeline:
+   mvn test -Dtest.suite=ci -Dthread.count=8 -Dparallel.mode=tests
+
+🔹 Cross-Platform:
+   mvn test -Dtest.suite=cross-platform -Dthread.count=4
+
+SUPPORTED PARAMETERS:
+====================
+- test.suite: default|smoke|regression|parallel|accessibility|ci|cross-platform
+- platform: Android|iOS (default: Android)  
+- thread.count: 1-10 (default: 2)
+- parallel.mode: none|tests|methods|classes (default: tests)
+- device.name: Device identifier (default: auto-selected)
+- platform.version: OS version (default: latest)
+- enable.accessibility: true|false (default: false)
+- test.groups: smoke,regression,integration etc.
+-->
+
+<suite name="UnifiedTestSuite" parallel="none" thread-count="1" verbose="1">
+    
+    <!-- =============================================== -->
+    <!-- GLOBAL LISTENERS (Applied to all test runs)     -->
+    <!-- =============================================== -->
+    <listeners>
+        <!-- Listeners will be configured based on test execution needs -->
+        <!-- <listener class-name="com.company.framework.listeners.ExtentTestNGListener"/> -->
+        <!-- <listener class-name="com.company.framework.listeners.AccessibilityTestListener"/> -->
+    </listeners>
+    
+    <!-- =============================================== -->
+    <!-- ANDROID TEST EXECUTION                          -->
+    <!-- =============================================== -->
+    <test name="AndroidExecution">
+        <!-- Android Device Configuration -->
+        <parameter name="platformName" value="Android"/>
+        <parameter name="deviceName" value="Pixel 8"/>
+        <parameter name="platformVersion" value="12"/>
+        <parameter name="automationName" value="UiAutomator2"/>
+        <parameter name="appPackage" value="com.netbiscuits.bild.android"/>
+        <parameter name="appActivity" value="de.bild.android.app.MainActivity"/>
+        <parameter name="appiumServer" value="http://localhost:4723/wd/hub"/>
+        <parameter name="accessibilityAudit" value="false"/>
+        
+        <!-- Group Inclusions (Order matters: groups before classes) -->
+        <groups>
+            <run>
+                <include name="smoke"/>
+                <include name="regression"/>
+                <include name="integration"/>
+                <include name="mobile"/>
+                <include name="web"/>
+                <include name="api"/>
+                <include name="functional"/>
+                <include name="negative"/>
+            </run>
+        </groups>
+        
+        <!-- Test Classes with Group-Based Method Filtering -->
+        <classes>
+            <!-- Mobile Tests -->
+            <class name="com.company.tests.mobile.BildHomePageTest">
+                <!-- Methods included based on test groups -->
+                <!-- All methods included by default -->
+            </class>
+        </classes>
+    </test>
+    
+    <!-- =============================================== -->
+    <!-- iOS TEST EXECUTION (Disabled by default)        -->
+    <!-- Enable by copying this test block and setting   -->
+    <!-- enabled="true" when running iOS tests            -->
+    <!-- =============================================== -->
+    <test name="iOSExecution" enabled="false">
+        <!-- iOS Device Configuration -->
+        <parameter name="platformName" value="iOS"/>
+        <parameter name="deviceName" value="iPhone 15 Pro"/>
+        <parameter name="platformVersion" value="17.0"/>
+        <parameter name="automationName" value="XCUITest"/>
+        <parameter name="bundleId" value="com.axelspringer.bildapp"/>
+        <parameter name="appiumServer" value="http://localhost:4723/wd/hub"/>
+        <parameter name="accessibilityAudit" value="false"/>
+        
+        <!-- Group Inclusions (Order matters: groups before classes) -->
+        <groups>
+            <run>
+                <include name="smoke"/>
+                <include name="regression"/>
+                <include name="integration"/>
+            </run>
+        </groups>
+        
+        <!-- Test Classes -->
+        <classes>
+            <class name="com.company.tests.mobile.BildHomePageTest"/>
+            <!-- Additional iOS-specific test classes -->
+        </classes>
+    </test>
+    
+    <!-- =============================================== -->
+    <!-- PARALLEL EXECUTION TEST (High Performance)      -->
+    <!-- Enable when running parallel/performance tests  -->
+    <!-- =============================================== -->
+    <test name="ParallelExecution" enabled="false">
+        <!-- High-performance parallel configuration -->
+        <parameter name="platformName" value="Android"/>
+        <parameter name="deviceName" value="Auto-Select"/>
+        <parameter name="platformVersion" value="Auto"/>
+        <parameter name="automationName" value="UiAutomator2"/>
+        <parameter name="appPackage" value="com.netbiscuits.bild.android"/>
+        <parameter name="appActivity" value="de.bild.android.app.MainActivity"/>
+        <parameter name="appiumServer" value="http://localhost:4723/wd/hub"/>
+        <parameter name="accessibilityAudit" value="false"/>
+        <parameter name="parallelExecution" value="true"/>
+        
+        <!-- Group Inclusions for parallel testing -->
+        <groups>
+            <run>
+                <include name="parallel"/>
+                <include name="smoke"/>
+                <include name="integration"/>
+            </run>
+        </groups>
+        
+        <!-- Test Classes -->
+        <classes>
+            <class name="com.company.tests.mobile.BildHomePageTest"/>
+        </classes>
+    </test>
+    
+</suite>

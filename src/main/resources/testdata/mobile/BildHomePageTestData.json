@@ -1,0 +1,96 @@
+{
+  "searchData": {
+    "validSearchTerms": [
+      {
+        "term": "Umfrage",
+        "description": "Survey-related content",
+        "expectedResults": ["Umfrage", "Politik", "Nachrichten"]
+      },
+      {
+        "term": "Fußball", 
+        "description": "Football/Soccer content",
+        "expectedResults": ["Fußball", "Sport", "Bundesliga"]
+      },
+      {
+        "term": "Politik",
+        "description": "Political news and updates",
+        "expectedResults": ["Politik", "Bundestag", "Regierung"]
+      },
+      {
+        "term": "Test",
+        "description": "Test-related search content",
+        "expectedResults": ["Test", "Design", "Muster"]
+      }
+    ],
+    "invalidSearchTerms": [
+      {
+        "term": "xyz123",
+        "description": "Non-existent content",
+        "expectedBehavior": "no results"
+      }
+    ]
+  },
+  "TestSearchData": {
+    "searchTerm": "Test",
+    "submitButtonCoordinates": {
+      "x": 1000,
+      "y": 2164
+    },
+    "tapDuration": 50
+  },
+  "navigationData": {
+    "menuItems": [
+      {
+        "menuName": "sport",
+        "displayName": "Sport",
+        "expectedElements": ["Fußball", "Bundesliga", "Champions League"]
+      },
+      {
+        "menuName": "politik", 
+        "displayName": "Politik",
+        "expectedElements": ["Bundestag", "Regierung", "Wahlen"]
+      },
+      {
+        "menuName": "unterhaltung",
+        "displayName": "Unterhaltung", 
+        "expectedElements": ["Prominente", "TV", "Kino"]
+      },
+      {
+        "menuName": "home",
+        "displayName": "Home",
+        "expectedElements": ["Nachrichten", "Top Stories", "Breaking News"]
+      }
+    ]
+  },
+  "premiumData": {
+    "accountVerification": {
+      "expectedTexts": ["SIE HABEN BEREITS EIN KONTO?", "ANMELDEN", "REGISTRIEREN"]
+    },
+    "premiumFeatures": [
+      {
+        "feature": "BildPlus",
+        "description": "Premium subscription content"
+      },
+      {
+        "feature": "Exklusiv", 
+        "description": "Exclusive articles and content"
+      }
+    ]
+  },
+  "appLoadingData": {
+    "timeouts": {
+      "pageLoad": 30000,
+      "elementWait": 10000,
+      "appStart": 15000
+    },
+    "retryConfig": {
+      "maxRetries": 3,
+      "retryDelay": 1000
+    }
+  },
+  "testEnvironment": {
+    "defaultLocale": "de-DE",
+    "fallbackLocale": "en-US", 
+    "testDevices": ["Android", "Samsung Galaxy", "Google Pixel"]
+  }
+}

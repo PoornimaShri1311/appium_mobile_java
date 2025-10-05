@@ -1,0 +1,191 @@
+{
+  "deviceMatrix": {
+    "android": {
+      "devices": [
+        {
+          "deviceName": "Pixel_7_API_33",
+          "platformVersion": "13.0",
+          "apiLevel": 33,
+          "systemImagePackage": "system-images;android-33;google_apis;x86_64",
+          "arch": "x86_64",
+          "skin": "pixel_7",
+          "density": 420,
+          "screenSize": "1080x2400",
+          "tags": ["flagship", "latest"],
+          "capabilities": {
+            "automationName": "UiAutomator2",
+            "autoGrantPermissions": true,
+            "noReset": true,
+            "newCommandTimeout": 300,
+            "adbExecTimeout": 20000,
+            "androidInstallTimeout": 90000,
+            "appWaitDuration": 20000
+          }
+        },
+        {
+          "deviceName": "Pixel_4_API_30",
+          "platformVersion": "11.0",
+          "apiLevel": 30,
+          "systemImagePackage": "system-images;android-30;google_apis;x86_64",
+          "arch": "x86_64",
+          "skin": "pixel_4",
+          "density": 440,
+          "screenSize": "1080x2280",
+          "tags": ["stable", "legacy"],
+          "capabilities": {
+            "automationName": "UiAutomator2",
+            "autoGrantPermissions": true,
+            "noReset": true,
+            "newCommandTimeout": 300,
+            "adbExecTimeout": 20000,
+            "androidInstallTimeout": 90000
+          }
+        },
+        {
+          "deviceName": "Nexus_6_API_28",
+          "platformVersion": "9.0",
+          "apiLevel": 28,
+          "systemImagePackage": "system-images;android-28;google_apis;x86",
+          "arch": "x86",
+          "skin": "nexus_6",
+          "density": 560,
+          "screenSize": "1440x2560",
+          "tags": ["legacy", "tablet-like"],
+          "capabilities": {
+            "automationName": "UiAutomator2",
+            "autoGrantPermissions": true,
+            "noReset": false,
+            "newCommandTimeout": 300,
+            "avdArgs": "-no-snapshot-save"
+          }
+        }
+      ]
+    },
+    "ios": {
+      "devices": [
+        {
+          "deviceName": "iPhone 15 Pro",
+          "platformVersion": "17.0",
+          "udid": "auto",
+          "simulatorStartupTimeout": 120000,
+          "screenSize": "1179x2556",
+          "pixelRatio": 3,
+          "tags": ["flagship", "latest"],
+          "capabilities": {
+            "automationName": "XCUITest",
+            "bundleId": "com.bild.news.ios",
+            "autoAcceptAlerts": true,
+            "autoGrantPermissions": true,
+            "noReset": true,
+            "newCommandTimeout": 300,
+            "wdaLocalPort": 8100,
+            "useNewWDA": true,
+            "resetOnSessionStartOnly": true,
+            "shouldUseSingletonTestManager": false,
+            "waitForQuiescence": false,
+            "reduceMotion": true
+          }
+        },
+        {
+          "deviceName": "iPhone 14",
+          "platformVersion": "16.4",
+          "udid": "auto",
+          "simulatorStartupTimeout": 120000,
+          "screenSize": "1170x2532",
+          "pixelRatio": 3,
+          "tags": ["stable"],
+          "capabilities": {
+            "automationName": "XCUITest",
+            "bundleId": "com.bild.news.ios",
+            "autoAcceptAlerts": true,
+            "autoGrantPermissions": true,
+            "noReset": true,
+            "newCommandTimeout": 300,
+            "wdaLocalPort": 8101,
+            "useNewWDA": true,
+            "resetOnSessionStartOnly": true
+          }
+        },
+        {
+          "deviceName": "iPad Pro (12.9-inch)",
+          "platformVersion": "17.0",
+          "udid": "auto",
+          "simulatorStartupTimeout": 150000,
+          "screenSize": "2048x2732",
+          "pixelRatio": 2,
+          "tags": ["tablet", "latest"],
+          "capabilities": {
+            "automationName": "XCUITest",
+            "bundleId": "com.bild.news.ios",
+            "autoAcceptAlerts": true,
+            "autoGrantPermissions": true,
+            "noReset": true,
+            "newCommandTimeout": 300,
+            "wdaLocalPort": 8102,
+            "useNewWDA": true,
+            "orientation": "LANDSCAPE"
+          }
+        }
+      ]
+    }
+  },
+  "testSuites": {
+    "smoke": {
+      "description": "Quick validation tests",
+      "timeout": 600,
+      "retryCount": 2,
+      "devices": ["Pixel_7_API_33", "iPhone 15 Pro"],
+      "tests": [
+        "tests.BildHomePageTest.testAppLaunch",
+        "tests.BildHomePageTest.testMenuNavigation"
+      ]
+    },
+    "regression": {
+      "description": "Full feature testing",
+      "timeout": 1800,
+      "retryCount": 1,
+      "devices": ["Pixel_7_API_33", "Pixel_4_API_30", "iPhone 15 Pro", "iPhone 14"],
+      "tests": [
+        "tests.BildHomePageTest",
+        "tests.BildSearchTest",
+        "tests.BildNavigationTest"
+      ]
+    },
+    "accessibility": {
+      "description": "Accessibility compliance testing",
+      "timeout": 900,
+      "retryCount": 1,
+      "devices": ["Pixel_7_API_33", "iPhone 15 Pro"],
+      "tests": [
+        "tests.AccessibilityTest"
+      ]
+    },
+    "cross_platform": {
+      "description": "Cross-platform compatibility",
+      "timeout": 2400,
+      "retryCount": 1,
+      "devices": ["Pixel_7_API_33", "iPhone 15 Pro", "iPad Pro (12.9-inch)"],
+      "tests": [
+        "tests.BildHomePageTest",
+        "tests.CrossPlatformTest"
+      ]
+    }
+  },
+  "parallelExecution": {
+    "maxConcurrentSessions": 4,
+    "threadPoolSize": 6,
+    "sessionTimeout": 300,
+    "retryDelay": 30,
+    "deviceAllocation": {
+      "strategy": "round_robin",
+      "priorities": ["latest", "flagship", "stable", "legacy"]
+    }
+  },
+  "reporting": {
+    "formats": ["html", "json", "xml"],
+    "includeScreenshots": true,
+    "includeAccessibilityScores": true,
+    "generateTrendReports": true,
+    "slackNotification": true
+  }
+}
