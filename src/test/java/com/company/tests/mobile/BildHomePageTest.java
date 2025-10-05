@@ -2,6 +2,7 @@ package com.company.tests.mobile;
 
 import com.company.framework.base.BaseTestMobile;
 import com.company.framework.pages.bild.ImprovedBildHomePage;
+import com.company.framework.pages.bild.BildHomeNavigationActions;
 import com.company.framework.pages.bild.BildLoginPage;
 import com.company.framework.utils.TestDataManager;
 import org.testng.annotations.Test;
@@ -10,17 +11,19 @@ import org.testng.annotations.BeforeClass;
 public class BildHomePageTest extends BaseTestMobile {
 
     private ImprovedBildHomePage bildHomePage;
+    private BildHomeNavigationActions navigationActions;
 
     @BeforeClass(dependsOnMethods = "setupClass")
     public void initPageObjects() {
         bildHomePage = new ImprovedBildHomePage(driver);
-        logTestStep("Page object initialized for: " + this.getClass().getSimpleName());
+        navigationActions = bildHomePage.getNavigationActions();
+        logTestStep("Page objects initialized for: " + this.getClass().getSimpleName());
     }
 
     // ====================================
     // BILD Search function - Positive test
     // ====================================
-    @Test(priority = 2, description = "Test Test search with coordinate tap functionality")
+    @Test(description = "Test Test search with coordinate tap functionality")
     public void testPatternSearchWithCoordinateTap() {
         logTestStep("Testing Test search functionality with coordinate-based interactions");
 
@@ -58,7 +61,7 @@ public class BildHomePageTest extends BaseTestMobile {
     // Login - BILD Premium Test - Negative Test
     // =========================================
 
-    @Test(priority = 1, description = "Test BILD login functionality")
+    @Test(description = "Test BILD login functionality")
     public void testBildLoginwithoutPremium() {
     logTestStep("Testing BILD login functionality");
 
@@ -85,6 +88,7 @@ public class BildHomePageTest extends BaseTestMobile {
     logTestStep("➡ Navigating Premium Bild Article Verification");
 
     loginPage.completePostLoginNavigation();
+    navigationActions.goBack();
 
     logTestStep("✅ Premium Bild Article Verification completed successfully");
     }

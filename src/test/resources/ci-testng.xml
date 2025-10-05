@@ -1,0 +1,41 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="CI_Test_Suite" parallel="false" thread-count="1" verbose="1">
+    
+    <parameter name="platform" value="android"/>
+    <parameter name="environment" value="ci"/>
+    
+    <!-- CI-specific test configuration -->
+    <test name="CI_Smoke_Tests" preserve-order="true">
+        <parameter name="retry.count" value="3"/>
+        <parameter name="timeout" value="300"/>
+        
+        <classes>
+            <!-- Basic framework tests that don't require BILD app -->
+            <class name="com.company.tests.mobile.FrameworkValidationTest">
+                <methods>
+                    <include name="testDriverInitialization"/>
+                    <include name="testConfigurationLoading"/>
+                    <include name="testElementLocatorFramework"/>
+                </methods>
+            </class>
+            
+            <!-- Mock BILD tests for CI -->
+            <class name="com.company.tests.mobile.BildHomePageTest">
+                <methods>
+                    <include name="testBasicAppLaunch" description="Test app launch capability"/>
+                    <!-- Exclude tests that require actual BILD app functionality -->
+                    <exclude name="testPatternSearchWithCoordinateTap"/>
+                    <exclude name="testBildLoginwithoutPremium"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+    
+    <!-- Listeners for CI-specific reporting -->
+    <listeners>
+        <listener class-name="com.company.framework.listeners.ExtentReportListener"/>
+        <listener class-name="com.company.framework.listeners.RetryAnalyzer"/>
+        <listener class-name="com.company.framework.listeners.ScreenshotListener"/>
+    </listeners>
+    
+</suite>

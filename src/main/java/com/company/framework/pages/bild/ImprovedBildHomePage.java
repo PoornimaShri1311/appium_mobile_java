@@ -42,7 +42,7 @@ public class ImprovedBildHomePage extends com.company.framework.pages.ImprovedBa
         PageFactory.initElements(new AppiumFieldDecorator(driver), this.elements);
         
         // Initialize action components with dependencies
-        this.navigationActions = new BildHomeNavigationActions(getPageActions(), elements);
+        this.navigationActions = new BildHomeNavigationActions(getPageActions(), elements, driver);
         this.searchActions = new BildHomeSearchActions(getPageActions(), getWaitStrategy(), elements, driver);
         this.verificationActions = new BildHomeVerificationActions(getPageActions(), elements);
         
@@ -129,8 +129,8 @@ public class ImprovedBildHomePage extends com.company.framework.pages.ImprovedBa
         performSearch(searchTerm);
     }
     
-    public boolean performUmfrageSearchWorkflow(String searchTerm) {
-        return searchActions.performUmfrageSearchWorkflow(searchTerm);
+    public boolean performSearchWorkflow(String searchTerm) {
+        return searchActions.performSearchWorkflow(searchTerm);
     }
     
     public void clearSearch() {

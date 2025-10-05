@@ -56,7 +56,9 @@ SUPPORTED PARAMETERS:
     <!-- GLOBAL LISTENERS (Applied to all test runs)     -->
     <!-- =============================================== -->
     <listeners>
-        <!-- Listeners will be configured based on test execution needs -->
+        <!-- Screenshot capture and reporting listeners -->
+        <!-- Note: Screenshot capture is also handled in BaseTestMobile @AfterMethod -->
+        <!-- Uncomment below if additional listener-based functionality is needed -->
         <!-- <listener class-name="com.company.framework.listeners.ExtentTestNGListener"/> -->
         <!-- <listener class-name="com.company.framework.listeners.AccessibilityTestListener"/> -->
     </listeners>
@@ -75,7 +77,9 @@ SUPPORTED PARAMETERS:
         <parameter name="appiumServer" value="http://localhost:4723/wd/hub"/>
         <parameter name="accessibilityAudit" value="false"/>
         
-        <!-- Group Inclusions (Order matters: groups before classes) -->
+        <!-- Group Inclusions - Commented out to run all methods -->
+        <!-- Uncomment and modify groups below if you want to filter by groups -->
+        <!--
         <groups>
             <run>
                 <include name="smoke"/>
@@ -88,6 +92,7 @@ SUPPORTED PARAMETERS:
                 <include name="negative"/>
             </run>
         </groups>
+        -->
         
         <!-- Test Classes with Group-Based Method Filtering -->
         <classes>

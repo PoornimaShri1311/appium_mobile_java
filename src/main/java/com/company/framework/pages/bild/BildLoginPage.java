@@ -62,7 +62,7 @@ public class BildLoginPage {
     try {
         WebElement premiumMarker = null;
 
-        for (By locator : CommonElementLocators.PREMIUM_SELECTORS) {
+        for (By locator : BildAppLocators.BILD_PREMIUM_MARKER_ICON) {
             premiumMarker = new TouchActionUtils(driver)
                 .scrollUntilVisibleAndClickable(locator, 5, 5);
             if (premiumMarker != null) {
@@ -159,7 +159,13 @@ public class BildLoginPage {
     public void completePostLoginNavigation() {
         clickStartseite();
         clickPremiumMarkerIfPresent();
-        clickHierGehtsWeiter();
+        
+        // Check if "HIER GEHT'S WEITER" element is present before going back
+        if (MobileTestUtils.isElementPresent(driver, BildAppLocators.BILD_HIER_GEHTS_WEITER)) {
+            System.out.println("✅ 'HIER GEHT'S WEITER' element found - goBack should work properly");
+        } else {
+            System.out.println("⚠️ 'HIER GEHT'S WEITER' element not found - goBack may not work as expected");
+        }
     }
 }
 

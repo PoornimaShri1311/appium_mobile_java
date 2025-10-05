@@ -105,7 +105,14 @@ public class BildAppLocators {
      * BILD post-login navigation and premium elements
      */
     public static final By BILD_STARTSEITE = AppiumBy.androidUIAutomator("new UiSelector().text(\"Startseite\")");
-    public static final By BILD_PREMIUM_MARKER_ICON = AppiumBy.androidUIAutomator("new UiSelector().description(\"Bild Premium Marker Icon\").instance(0)");
+    
+    public static final By[] BILD_PREMIUM_MARKER_ICON = {
+    AppiumBy.accessibilityId("Bild Premium Marker Icon"),
+    AppiumBy.androidUIAutomator("new UiSelector().description(\"Bild Premium Marker Icon\")"),
+    By.id("com.netbiscuits.bild.android:id/premium_button"),
+    By.xpath("//*[@text='BILD Premium' or contains(@text, 'Premium')]")
+    };
+
     public static final By BILD_HIER_GEHTS_WEITER = AppiumBy.androidUIAutomator("new UiSelector().text(\"HIER GEHT'S WEITER\")");
     
     // =================== BILD PATTERN SEARCH ELEMENTS ===================
@@ -116,6 +123,43 @@ public class BildAppLocators {
     public static final By BILD_SEARCH_BUTTON = AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.Button\").instance(1)");
     public static final By BILD_SEARCH_INPUT_FIELD = AppiumBy.className("android.widget.EditText");
     public static final By BILD_SEARCH_RESULT_ITEM = AppiumBy.xpath("//android.widget.TextView[contains(@text, 'Test')]");
+    
+    // =================== BILD SEARCH XPATH CONSTANTS ===================
+    
+    /**
+     * Common XPath patterns used in search functionality
+     */
+    public static final String XPATH_ANDROIDX_COMPOSEVIEW = "//androidx.compose.ui.platform.ComposeView";
+    public static final String XPATH_ANDROID_EDITTEXT = "//android.widget.EditText";
+    
+    /**
+     * Alternative search input locators for fallback scenarios
+     */
+    public static final By[] BILD_SEARCH_INPUT_ALTERNATIVES = {
+        By.xpath("//android.widget.AutoCompleteTextView"),
+        By.xpath("//*[contains(@hint,'search') or contains(@hint,'Search')]"),
+        By.xpath("//*[contains(@content-desc,'search') or contains(@content-desc,'Search')]"),
+        By.xpath("//android.view.View[contains(@content-desc,'search')]")
+    };
+    
+    /**
+     * Search result and suggestion locators
+     */
+    public static final By[] BILD_SEARCH_RESULTS = {
+        By.xpath("//*[contains(@class, 'result') or contains(@class, 'item') or contains(@class, 'article')]"),
+        By.xpath("//*[contains(@class, 'suggestion') or contains(@class, 'dropdown')]"),
+        By.xpath(XPATH_ANDROIDX_COMPOSEVIEW + "/android.view.View/android.view.View/android.view.View/android.view.View[1]//android.view.View"),
+        By.xpath(XPATH_ANDROIDX_COMPOSEVIEW + "/android.view.View/android.view.View/android.view.View/android.view.View[1]//*")
+    };
+    
+    /**
+     * Search button alternative locators
+     */
+    public static final By[] BILD_SEARCH_BUTTON_ALTERNATIVES = {
+        By.xpath("//android.widget.Button[contains(@content-desc,'search') or contains(@content-desc,'Search')]"),
+        By.xpath("//*[contains(@resource-id, 'search') and @class='android.widget.Button']"),
+        By.xpath("//*[@content-desc='Search' or @content-desc='search']")
+    };
 
     // =================== UTILITY METHODS ===================
     
@@ -136,6 +180,12 @@ public class BildAppLocators {
                 return BILD_CANCEL_SELECTORS;
             case BILD_LOGIN:
                 return BILD_LOGIN_SELECTORS;
+            case BILD_SEARCH_INPUT_ALTERNATIVES:
+                return BILD_SEARCH_INPUT_ALTERNATIVES;
+            case BILD_SEARCH_RESULTS:
+                return BILD_SEARCH_RESULTS;
+            case BILD_SEARCH_BUTTON_ALTERNATIVES:
+                return BILD_SEARCH_BUTTON_ALTERNATIVES;
             default:
                 throw new IllegalArgumentException("Unknown BILD element type: " + elementType);
         }
@@ -165,6 +215,9 @@ public class BildAppLocators {
         BILD_PREMIUM,
         BILD_ARTICLE,
         BILD_CANCEL,
-        BILD_LOGIN
+        BILD_LOGIN,
+        BILD_SEARCH_INPUT_ALTERNATIVES,
+        BILD_SEARCH_RESULTS,
+        BILD_SEARCH_BUTTON_ALTERNATIVES
     }
 }

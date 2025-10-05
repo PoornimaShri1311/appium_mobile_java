@@ -4,6 +4,13 @@ import com.company.framework.interfaces.INavigationActions;
 import com.company.framework.interfaces.IPageActions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import io.appium.java_client.AppiumDriver;
+import io.appium.java_client.android.AndroidDriver;
+import io.appium.java_client.android.nativekey.AndroidKey;
+import io.appium.java_client.android.nativekey.KeyEvent;
+import java.util.List;
 
 /**
  * BildHomeNavigationActions - Handles navigation actions for BILD home page
@@ -14,10 +21,19 @@ public class BildHomeNavigationActions implements INavigationActions {
     private static final Logger logger = LogManager.getLogger(BildHomeNavigationActions.class);
     private final IPageActions pageActions;
     private final BildHomeElements elements;
+    private final AppiumDriver driver;
     
+    public BildHomeNavigationActions(IPageActions pageActions, BildHomeElements elements, AppiumDriver driver) {
+        this.pageActions = pageActions;
+        this.elements = elements;
+        this.driver = driver;
+    }
+    
+    // Backward compatibility constructor
     public BildHomeNavigationActions(IPageActions pageActions, BildHomeElements elements) {
         this.pageActions = pageActions;
         this.elements = elements;
+        this.driver = null; // Will need to be handled in methods
     }
     
     @Override
@@ -43,8 +59,7 @@ public class BildHomeNavigationActions implements INavigationActions {
             case "search":
                 clickSearchButton();
                 break;
-            case "bild premium":
-            case "premium":
+                        case "premium":
                 clickBildPremium();
                 break;
             default:
@@ -56,8 +71,67 @@ public class BildHomeNavigationActions implements INavigationActions {
     
     @Override
     public void goBack() {
-        // Implementation for going back - could use driver.navigate().back() or specific back button
         logger.info("Going back to previous page");
+        
+        try {
+            // Approach 1: Try Android back button using key event (if driver is available)
+            if (driver != null && driver instanceof AndroidDriver) {
+                try {
+                    ((AndroidDriver) driver).pressKey(new KeyEvent(AndroidKey.BACK));
+                    logger.info("Successfully performed back navigation using Android back key");
+                    return;
+                } catch (Exception e1) {
+                    logger.warn("Android back key failed: " + e1.getMessage());
+                }
+            }
+            
+            // Approach 2: Try WebDriver navigate back (if driver is available)
+            if (driver != null) {
+                try {
+                    driver.navigate().back();
+                    logger.info("Successfully performed back navigation using WebDriver navigate().back()");
+                    return;
+                } catch (Exception e2) {
+                    logger.warn("WebDriver navigate().back() failed: " + e2.getMessage());
+                }
+            }
+            
+            // Approach 3: Look for back button elements on screen
+            try {
+                By[] backButtonLocators = {
+                    By.xpath("//android.widget.ImageButton[@content-desc='Navigate up']"),
+                    By.xpath("//*[@content-desc='Back' or @content-desc='back']"),
+                    By.xpath("//android.widget.Button[contains(@text, 'Back') or contains(@text, 'Zurück')]"),
+                    By.xpath("//*[contains(@class, 'BackButton') or contains(@resource-id, 'back')]"),
+                    By.xpath("//android.widget.ImageView[@content-desc='Navigate up']")
+                };
+                
+                for (By backLocator : backButtonLocators) {
+                    try {
+                        if (driver != null) {
+                            List<WebElement> backElements = driver.findElements(backLocator);
+                            if (!backElements.isEmpty() && pageActions.isDisplayed(backElements.get(0))) {
+                                pageActions.waitAndClick(backElements.get(0));
+                                logger.info("Successfully clicked back button using locator: " + backLocator);
+                                return;
+                            }
+                        }
+                    } catch (Exception be) {
+                        logger.debug("Back button locator failed: {} - {}", backLocator, be.getMessage());
+                    }
+                }
+                
+                logger.warn("No back button found on screen");
+            } catch (Exception e3) {
+                logger.warn("Back button search failed: " + e3.getMessage());
+            }
+            
+            logger.error("All back navigation approaches failed - no driver available and no back button found");
+            
+        } catch (Exception e) {
+            logger.error("Critical error in goBack method: " + e.getMessage());
+            throw new RuntimeException("Go back navigation failed: " + e.getMessage(), e);
+        }
     }
     
     @Override

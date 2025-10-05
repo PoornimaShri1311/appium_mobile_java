@@ -1,6 +1,7 @@
 package com.company.framework.base;
 
 import com.company.framework.managers.DependencyFactory;
+import com.company.framework.utils.TestReportingUtils;
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
@@ -150,10 +151,34 @@ public class BaseTestMobile {
                         System.out.println("✅ Test passed: " + result.getMethod().getMethodName());
                         break;
                     case org.testng.ITestResult.FAILURE:
-                        test.fail("Test failed: " + result.getThrowable());
+                        // Capture screenshot on failure
+                        if (driver != null) {
+                            try {
+                                String screenshotPath = TestReportingUtils.captureScreenshot(driver, result.getMethod().getMethodName() + "_FAILURE");
+                                test.addScreenCaptureFromPath(screenshotPath, "Test Failure Screenshot");
+                                test.fail("Test failed: " + result.getThrowable());
+                                System.out.println("📷 Screenshot captured: " + screenshotPath);
+                            } catch (Exception screenshotException) {
+                                System.out.println("⚠️ Failed to capture screenshot: " + screenshotException.getMessage());
+                                test.fail("Test failed: " + result.getThrowable());
+                            }
+                        } else {
+                            test.fail("Test failed: " + result.getThrowable());
+                            System.out.println("⚠️ No driver available for screenshot capture");
+                        }
                         System.out.println("❌ Test failed: " + result.getMethod().getMethodName());
                         break;
                     case org.testng.ITestResult.SKIP:
+                        // Optionally capture screenshot on skip (useful for debugging)
+                        if (driver != null) {
+                            try {
+                                String screenshotPath = TestReportingUtils.captureScreenshot(driver, result.getMethod().getMethodName() + "_SKIPPED");
+                                test.addScreenCaptureFromPath(screenshotPath, "Test Skipped Screenshot");
+                                System.out.println("📷 Screenshot captured for skipped test: " + screenshotPath);
+                            } catch (Exception screenshotException) {
+                                System.out.println("⚠️ Failed to capture screenshot for skipped test: " + screenshotException.getMessage());
+                            }
+                        }
                         test.skip("Test skipped: " + result.getThrowable());
                         System.out.println("⏭️ Test skipped: " + result.getMethod().getMethodName());
                         break;

@@ -3,6 +3,8 @@ package com.company.framework.pages.bild;
 import com.company.framework.interfaces.ISearchActions;
 import com.company.framework.interfaces.IPageActions;
 import com.company.framework.interfaces.IWaitStrategy;
+import com.company.framework.locators.BildAppLocators;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
@@ -32,8 +34,6 @@ public class BildHomeSearchActions implements ISearchActions {
     private static final int SEARCH_TAP_X_COORDINATE = 540;
     private static final int SEARCH_TAP_Y_COORDINATE = 2153;
     private static final int SEARCH_TAP_DURATION = 50;
-    private static final String XPATH_ANDROIDX_COMPOSEVIEW = "//androidx.compose.ui.platform.ComposeView";
-    private static final String XPATH_ANDROID_EDITTEXT = "//android.widget.EditText";
 
     public BildHomeSearchActions(IPageActions pageActions, IWaitStrategy waitStrategy, 
                                 BildHomeElements elements, AppiumDriver driver) {
@@ -67,7 +67,9 @@ public class BildHomeSearchActions implements ISearchActions {
             // Wait for search suggestions to appear using smart wait
             WaitUtils waitUtils = new WaitUtils(5);
             try {
-                waitUtils.waitForElementsToBePresent(By.xpath("//*[contains(@class, 'suggestion') or contains(@class, 'dropdown') or contains(@text, '" + searchTerm + "')]"));
+                // Try search result locators which include suggestion patterns
+                By[] suggestionLocators = BildAppLocators.BILD_SEARCH_RESULTS;
+                waitUtils.waitForElementsToBePresent(suggestionLocators[1]); // Use suggestion locator
             } catch (Exception e) {
                 // Suggestions may not appear immediately, continue
             }
@@ -96,24 +98,25 @@ public class BildHomeSearchActions implements ISearchActions {
         try {
             // Wait for search results to load using smart wait
             WaitUtils waitUtils = new WaitUtils((int)(DELAY_SEARCH_EXECUTION / 1000));
+            By[] searchResultLocators = BildAppLocators.BILD_SEARCH_RESULTS;
             try {
-                waitUtils.waitForElementsToBePresent(By.xpath("//*[contains(@class, 'result') or contains(@class, 'item') or contains(@class, 'article')]"));
+                waitUtils.waitForElementsToBePresent(searchResultLocators[0]);
             } catch (Exception e) {
                 // Results may take time to appear, continue with execution
             }
 
-            // Target the specific results panel
-            String panelXPath = XPATH_ANDROIDX_COMPOSEVIEW + "/android.view.View/android.view.View/android.view.View/android.view.View[1]";
-            List<WebElement> panelChildren = driver.findElements(By.xpath(panelXPath + "//android.view.View"));
-            
-            if (!panelChildren.isEmpty()) {
-                results.addAll(panelChildren);
-                logger.info("Found " + panelChildren.size() + " result elements in the results panel");
-            } else {
-                // Alternative search
-                List<WebElement> alternativeChildren = driver.findElements(By.xpath(panelXPath + "//*"));
-                results.addAll(alternativeChildren);
-                logger.info("Alternative: Found " + alternativeChildren.size() + " elements in the panel");
+            // Try all search result locators from BildAppLocators
+            for (By resultLocator : searchResultLocators) {
+                try {
+                    List<WebElement> foundResults = driver.findElements(resultLocator);
+                    if (!foundResults.isEmpty()) {
+                        results.addAll(foundResults);
+                        logger.info("Found " + foundResults.size() + " result elements using locator: " + resultLocator);
+                        break; // Use first successful locator
+                    }
+                } catch (Exception e) {
+                    logger.debug("Search result locator failed: {} - {}", resultLocator, e.getMessage());
+                }
             }
         } catch (Exception e) {
             logger.error("Error collecting results from panel: " + e.getMessage());
@@ -177,19 +180,83 @@ public class BildHomeSearchActions implements ISearchActions {
 
     // Private helper methods
     private boolean openSearch() {
+        logger.info("Attempting to open search functionality");
+        
+        // Try multiple approaches to open search
         try {
-            pageActions.waitAndClick(elements.getSearchButton());
-            Thread.sleep(1000);
-            return isSearchInputAvailable();
+            // Approach 1: Use the defined search button element
+            try {
+                logger.info("Trying approach 1: Using defined search button element");
+                pageActions.waitAndClick(elements.getSearchButton());
+                Thread.sleep(1000);
+                if (isSearchInputAvailable()) {
+                    logger.info("Search opened successfully using approach 1");
+                    return true;
+                }
+            } catch (Exception e1) {
+                logger.warn("Approach 1 failed: " + e1.getMessage());
+            }
+            
+            // Approach 2: Try to find search button by alternative locators from BildAppLocators
+            try {
+                logger.info("Trying approach 2: Alternative search button locators from BildAppLocators");
+                By[] searchButtonAlternatives = BildAppLocators.BILD_SEARCH_BUTTON_ALTERNATIVES;
+                for (By locator : searchButtonAlternatives) {
+                    try {
+                        List<WebElement> searchButtons = driver.findElements(locator);
+                        if (!searchButtons.isEmpty()) {
+                            searchButtons.get(0).click();
+                            Thread.sleep(1000);
+                            if (isSearchInputAvailable()) {
+                                logger.info("Search opened successfully using approach 2 with locator: {}", locator);
+                                return true;
+                            }
+                        }
+                    } catch (Exception le) {
+                        logger.debug("Search button locator failed: {} - {}", locator, le.getMessage());
+                    }
+                }
+            } catch (Exception e2) {
+                logger.warn("Approach 2 failed: " + e2.getMessage());
+            }
+            
+            // Approach 3: Try coordinate-based tap at expected search button location
+            try {
+                logger.info("Trying approach 3: Coordinate-based tap for search button");
+                // Use coordinates that are typically where search buttons are located
+                touchActions.quickTap(200, 200); // Adjust coordinates as needed
+                Thread.sleep(1000);
+                if (isSearchInputAvailable()) {
+                    logger.info("Search opened successfully using approach 3");
+                    return true;
+                }
+            } catch (Exception e3) {
+                logger.warn("Approach 3 failed: " + e3.getMessage());
+            }
+            
+            // Approach 4: Check if search is already available (might be pre-opened)
+            try {
+                logger.info("Trying approach 4: Checking if search is already available");
+                if (isSearchInputAvailable()) {
+                    logger.info("Search input is already available - no need to open");
+                    return true;
+                }
+            } catch (Exception e4) {
+                logger.warn("Approach 4 failed: " + e4.getMessage());
+            }
+            
+            logger.error("All approaches to open search failed");
+            return false;
+            
         } catch (Exception e) {
-            logger.info("Could not open search: " + e.getMessage());
+            logger.error("Critical error in openSearch: " + e.getMessage());
             return false;
         }
     }
 
     private boolean isSearchInputAvailable() {
         try {
-            List<WebElement> editTexts = driver.findElements(By.xpath(XPATH_ANDROID_EDITTEXT));
+            List<WebElement> editTexts = driver.findElements(By.xpath(BildAppLocators.XPATH_ANDROID_EDITTEXT));
             return !editTexts.isEmpty();
         } catch (Exception e) {
             return false;
@@ -197,25 +264,56 @@ public class BildHomeSearchActions implements ISearchActions {
     }
 
     private WebElement findSearchInput() {
+        logger.info("Attempting to find search input field");
+        
+        // Approach 1: Try the original searchInput element first
         try {
-            // Try the original searchInput element first
+            logger.info("Trying approach 1: Using defined search input element");
             if (pageActions.isDisplayed(elements.getSearchInput())) {
+                logger.info("Found search input using defined element");
                 return elements.getSearchInput();
             }
         } catch (Exception e) {
-            logger.info("Original search input not available: " + e.getMessage());
+            logger.warn("Approach 1 failed - Original search input not available: " + e.getMessage());
         }
 
-        // Fallback to any EditText element
+        // Approach 2: Fallback to any EditText element
         try {
-            List<WebElement> editTexts = driver.findElements(By.xpath("//android.widget.EditText"));
+            logger.info("Trying approach 2: Looking for any EditText elements");
+            List<WebElement> editTexts = new ArrayList<>();
+            for (By locator : BildAppLocators.BILD_SEARCH_SELECTORS) {
+                editTexts.addAll(driver.findElements(locator));
+            }
+
             if (!editTexts.isEmpty()) {
+                logger.info("Found {} EditText elements, using the first one", editTexts.size());
                 return editTexts.get(0);
             }
         } catch (Exception e) {
-            logger.info("No EditText elements found: " + e.getMessage());
+            logger.warn("Approach 2 failed - No EditText elements found: " + e.getMessage());
         }
 
+        // Approach 3: Try alternative search input locators from BildAppLocators
+        try {
+            logger.info("Trying approach 3: Alternative search input locators from BildAppLocators");
+            By[] alternativeLocators = BildAppLocators.BILD_SEARCH_INPUT_ALTERNATIVES;
+            
+            for (By locator : alternativeLocators) {
+                try {
+                    List<WebElement> elements = driver.findElements(locator);
+                    if (!elements.isEmpty()) {
+                        logger.info("Found search input using alternative locator: {}", locator);
+                        return elements.get(0);
+                    }
+                } catch (Exception xe) {
+                    logger.debug("Locator failed: {} - {}", locator, xe.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Approach 3 failed - Alternative locators not found: " + e.getMessage());
+        }
+
+        logger.error("All approaches to find search input failed");
         return null;
     }
 
@@ -338,7 +436,7 @@ public class BildHomeSearchActions implements ISearchActions {
      * @param searchTerm The search term to use
      * @return true if results contain the search term, false otherwise
      */
-    public boolean performUmfrageSearchWorkflow(String searchTerm) {
+    public boolean performSearchWorkflow(String searchTerm) {
         logger.info("Starting Umfrage search workflow for: " + searchTerm);
         
         try {
@@ -361,7 +459,8 @@ public class BildHomeSearchActions implements ISearchActions {
             // Step 2: Wait for results to appear (no Enter key needed)
             WaitUtils waitUtils = new WaitUtils(10);
             try {
-                waitUtils.waitForElementsToBePresent(By.xpath("//*[contains(@class, 'result') or contains(@class, 'item')]"));
+                By[] searchResultLocators = BildAppLocators.BILD_SEARCH_RESULTS;
+                waitUtils.waitForElementsToBePresent(searchResultLocators[0]); // Use first result locator
             } catch (Exception e) {
                 // Continue even if results take time to load
             }
@@ -394,21 +493,25 @@ public class BildHomeSearchActions implements ISearchActions {
             // Wait for results to appear
             Thread.sleep(3000);
 
-            // Target the specific results panel
-            String panelXPath = "//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View/android.view.View[1]";
-
-            // Get all child elements within this panel
-            List<WebElement> panelChildren = driver.findElements(By.xpath(panelXPath + "//android.view.View"));
+            // Use search result locators from BildAppLocators
+            By[] searchResultLocators = BildAppLocators.BILD_SEARCH_RESULTS;
             
-            if (!panelChildren.isEmpty()) {
-                results.addAll(panelChildren);
-                logger.info("Found " + panelChildren.size() + " result elements in the results panel");
-            } else {
-                logger.warn("No results found in the specified panel");
-                // Alternative: try to find any child elements in the panel
-                List<WebElement> alternativeChildren = driver.findElements(By.xpath(panelXPath + "//*"));
-                results.addAll(alternativeChildren);
-                logger.info("Alternative: Found " + alternativeChildren.size() + " elements in the panel");
+            // Try each locator until one succeeds
+            for (By resultLocator : searchResultLocators) {
+                try {
+                    List<WebElement> foundResults = driver.findElements(resultLocator);
+                    if (!foundResults.isEmpty()) {
+                        results.addAll(foundResults);
+                        logger.info("Found " + foundResults.size() + " result elements using locator: " + resultLocator);
+                        break; // Use first successful locator
+                    }
+                } catch (Exception e) {
+                    logger.debug("Search result locator failed: {} - {}", resultLocator, e.getMessage());
+                }
+            }
+            
+            if (results.isEmpty()) {
+                logger.warn("No results found using any of the configured locators");
             }
             
         } catch (InterruptedException e) {
