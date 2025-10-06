@@ -13,7 +13,7 @@ public class WaitUtils {
     private final WebDriverWait wait;
 
     public WaitUtils(long timeoutInSeconds) {
-        this.driver = com.company.framework.managers.DependencyFactory.getInstance().getDriverManager().getDriver();
+        this.driver = com.company.framework.managers.DependencyManager.getInstance().getDriverManager().getDriver();
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutInSeconds));
     }
 
@@ -59,7 +59,7 @@ public class WaitUtils {
      */
     public boolean waitForSearchResults(com.aventstack.extentreports.ExtentTest testReporter) {
         return waitForElementsWithFallback(
-            com.company.framework.locators.CommonElementLocators.getLocatorsForElementType(com.company.framework.locators.CommonElementLocators.ElementType.SEARCH_RESULT),
+            com.company.framework.locators.common.BaseLocators.getLocators(com.company.framework.locators.common.LocatorType.INPUT),
             "Search results",
             testReporter
         );
@@ -72,7 +72,7 @@ public class WaitUtils {
      */
     public boolean waitForPremiumElements(com.aventstack.extentreports.ExtentTest testReporter) {
         return waitForElementsWithFallback(
-            com.company.framework.locators.CommonElementLocators.getLocatorsForElementType(com.company.framework.locators.CommonElementLocators.ElementType.PREMIUM),
+            com.company.framework.locators.bild.BildAppLocators.getLocators(com.company.framework.locators.bild.BildAppLocators.BildElementType.PREMIUM),
             "Premium elements",
             testReporter
         );

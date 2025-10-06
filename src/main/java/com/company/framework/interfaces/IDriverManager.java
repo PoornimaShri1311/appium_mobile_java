@@ -23,10 +23,16 @@ public interface IDriverManager {
      * Quit the driver and clean up resources
      */
     void quitDriver();
-    
+
     /**
      * Check if driver is initialized
-     * @return true if driver is available, false otherwise
+     * @return true if driver is active, false otherwise
      */
     boolean isDriverInitialized();
+    
+    /**
+     * Initialize driver and return the instance
+     * @return AppiumDriver instance
+     */
+    AppiumDriver initializeAndGetDriver();
 }

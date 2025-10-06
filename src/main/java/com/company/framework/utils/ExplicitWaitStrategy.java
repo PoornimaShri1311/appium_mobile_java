@@ -45,7 +45,7 @@ public class ExplicitWaitStrategy implements IWaitStrategy {
     @Override
     public void scrollToElement(WebElement element) {
         // For mobile apps, use TouchActionUtils directly for mobile-optimized scrolling
-        AppiumDriver driver = com.company.framework.managers.DependencyFactory.getInstance().getDriverManager().getDriver();
+        AppiumDriver driver = com.company.framework.managers.DependencyManager.getInstance().getDriverManager().getDriver();
         com.company.framework.utils.TouchActionUtils touchUtils = new com.company.framework.utils.TouchActionUtils(driver);
         touchUtils.scrollToElement(element);
     }

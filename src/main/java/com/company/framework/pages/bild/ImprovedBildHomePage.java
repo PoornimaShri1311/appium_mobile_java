@@ -43,7 +43,7 @@ public class ImprovedBildHomePage extends com.company.framework.pages.ImprovedBa
         
         // Initialize action components with dependencies
         this.navigationActions = new BildHomeNavigationActions(getPageActions(), elements, driver);
-        this.searchActions = new BildHomeSearchActions(getPageActions(), getWaitStrategy(), elements, driver);
+        this.searchActions = new BildHomeSearchActions(getPageActions(), elements, driver);
         this.verificationActions = new BildHomeVerificationActions(getPageActions(), elements);
         
         logger.info("ImprovedBildHomePage initialized with SOLID principles");
@@ -178,7 +178,7 @@ public class ImprovedBildHomePage extends com.company.framework.pages.ImprovedBa
     public void clickSearchResultItem() {
         try {
             WebElement resultItem = com.company.framework.utils.MobileTestUtils.waitForElementClickable(
-                driver, com.company.framework.locators.BildAppLocators.BILD_SEARCH_RESULT_ITEM, 10);
+                driver, com.company.framework.locators.bild.BildAppLocators.getSearchResultByText("Test"), 10);
             resultItem.click();
             System.out.println("✅ Clicked on search result item successfully");
         } catch (Exception e) {

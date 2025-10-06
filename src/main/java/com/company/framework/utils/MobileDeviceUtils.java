@@ -13,6 +13,7 @@ import org.testng.xml.XmlSuite;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
+import java.net.URI;
 import java.net.MalformedURLException;
 import java.util.Properties;
 import java.net.URL;
@@ -97,9 +98,9 @@ public class MobileDeviceUtils {
         try {
             String host = FrameworkConfig.getAppiumServerHost();
             int port = FrameworkConfig.getAppiumServerPort();
-            return new URL("http://" + host + ":" + port + "/");
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Invalid default Appium URL", e);
+            return URI.create("http://" + host + ":" + port + "/").toURL();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create Appium server URL: " + e.getMessage(), e);
         }
     }
     

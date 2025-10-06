@@ -1,171 +1,164 @@
 package com.company.framework.pages.bild;
 
 import io.appium.java_client.AppiumDriver;
-
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.testng.Assert;
+
+import com.company.framework.locators.bild.BildAppLocators;
+import com.company.framework.locators.bild.BildAppLocators.BildElementType;
 import com.company.framework.utils.MobileTestUtils;
 import com.company.framework.utils.TouchActionUtils;
-import com.company.framework.locators.BildAppLocators;
-import com.company.framework.locators.CommonElementLocators;
 
 import org.openqa.selenium.interactions.PointerInput;
 import org.openqa.selenium.interactions.Sequence;
+
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class BildLoginPage {
-    private AppiumDriver driver;
+
+    private static final Logger logger = LogManager.getLogger(BildLoginPage.class);
+    private final AppiumDriver driver;
 
     public BildLoginPage(AppiumDriver driver) {
         this.driver = driver;
     }
 
     public void openLoginForm() {
-        MobileTestUtils.safeClick(driver, BildAppLocators.BILD_MORE_MENU);
-        MobileTestUtils.safeClick(driver, BildAppLocators.BILD_MY_ACCOUNT);
-        MobileTestUtils.safeClick(driver, BildAppLocators.BILD_LOGIN_VIEW);
+        // Click \"Mehr\" menu
+        MobileTestUtils.safeClick(driver, BildAppLocators.getButtonByText("Mehr"));
+        // Click \"Mein Konto\" 
+        MobileTestUtils.safeClick(driver, BildAppLocators.getButtonByText("Mein Konto"));
+        // Click login view
+        By[] loginLocators = BildAppLocators.getLocators(BildElementType.LOGIN);
+        MobileTestUtils.safeClick(driver, loginLocators[2]); // login view locator
     }
 
     public void enterEmail(String email) {
-        WebElement emailField = MobileTestUtils.waitForElementVisible(driver, BildAppLocators.BILD_EMAIL_FIELD, 10);
+        WebElement emailField = MobileTestUtils.waitForElementVisible(driver, 
+                BildAppLocators.getLoginFieldById("identifier"), 10);
         emailField.clear();
         emailField.sendKeys(email);
     }
 
-
     public void enterPassword(String password) {
-        MobileTestUtils.safeType(driver, BildAppLocators.BILD_PASSWORD_FIELD, password);
+        MobileTestUtils.safeType(driver,
+                BildAppLocators.getLoginFieldById("password"), 
+                password);
     }
 
     public void clickLogin() {
-        MobileTestUtils.safeClick(driver, BildAppLocators.BILD_LOGIN_BUTTON);
+        MobileTestUtils.safeClick(driver,
+                BildAppLocators.getButtonByText("JETZT ANMELDEN"));
     }
 
     public boolean isLoginSuccessful() {
         return MobileTestUtils.isBildAppRunning(driver);
     }
-    
+
     public void assertTrueWithLog(boolean condition, String message) {
         Assert.assertTrue(condition, message);
-        System.out.println("✅ Assertion passed: " + message);
+        logger.info("✅ Assertion passed: " + message);
     }
 
     public void clickStartseite() {
-        WebElement startseite = MobileTestUtils.waitForElementClickable(driver, BildAppLocators.BILD_STARTSEITE, 10);
+        WebElement startseite = MobileTestUtils.waitForElementClickable(driver,
+                BildAppLocators.getLocators(BildElementType.STARTSEITE)[0], 10); 
         startseite.click();
         MobileTestUtils.waitForPageToLoad(driver);
     }
 
     public void clickPremiumMarkerIfPresent() {
-    try {
-        WebElement premiumMarker = null;
+        try {
+            WebElement premiumMarker = null;
+            TouchActionUtils touch = new TouchActionUtils(driver);
 
-        for (By locator : BildAppLocators.BILD_PREMIUM_MARKER_ICON) {
-            premiumMarker = new TouchActionUtils(driver)
-                .scrollUntilVisibleAndClickable(locator, 5, 5);
-            if (premiumMarker != null) {
-                System.out.println("✅ Premium marker found and clickable: " + locator);
-                premiumMarker.click();
-                MobileTestUtils.waitForPageToLoad(driver);
-                return; // stop after first success
+            for (By locator : BildAppLocators.getLocators(BildElementType.PREMIUM_MARKER_ICON)) { 
+                premiumMarker = touch.scrollUntilVisibleAndClickable(locator, 5, 5);
+                if (premiumMarker != null) {
+                    logger.info("✅ Premium marker found and clickable: " + locator);
+                    premiumMarker.click();
+                    MobileTestUtils.waitForPageToLoad(driver);
+                    return;
+                }
             }
+
+            logger.warn("⚠️ Premium marker not found after all scroll attempts");
+
+        } catch (Exception e) {
+            logger.error("⚠️ Premium marker interaction failed: " + e.getMessage());
         }
-
-        System.out.println("⚠️ Premium marker not found after all scroll attempts");
-
-    } catch (Exception e) {
-        System.out.println("⚠️ Premium marker interaction failed: " + e.getMessage());
     }
-}
 
-
-    
     private void scrollDown() {
         try {
-            // Get screen dimensions
             org.openqa.selenium.Dimension screenSize = driver.manage().window().getSize();
             int startY = (int) (screenSize.height * 0.7);
             int endY = (int) (screenSize.height * 0.3);
             int centerX = screenSize.width / 2;
-            
-            // Use W3C Actions for scrolling
+
             PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
             Sequence scroll = new Sequence(finger, 1);
             scroll.addAction(finger.createPointerMove(Duration.ZERO, PointerInput.Origin.viewport(), centerX, startY));
             scroll.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
             scroll.addAction(finger.createPointerMove(Duration.ofMillis(500), PointerInput.Origin.viewport(), centerX, endY));
             scroll.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-            
+
             driver.perform(Arrays.asList(scroll));
-            System.out.println("🔄 Scroll gesture performed using W3C Actions");
+            logger.info("🔄 Scroll gesture performed using W3C Actions");
         } catch (Exception e) {
-            System.out.println("⚠️ Scroll failed: " + e.getMessage());
+            logger.error("⚠️ Scroll failed: " + e.getMessage());
         }
     }
 
     public void clickHierGehtsWeiter() {
         try {
             WebElement weiterButton = null;
-            
-            // Try to find the button directly first
-            try {
-                weiterButton = MobileTestUtils.waitForElementClickable(driver, BildAppLocators.BILD_HIER_GEHTS_WEITER, 3);
-                System.out.println("✅ 'HIER GEHT'S WEITER' button found directly");
-            } catch (Exception e1) {
-                System.out.println("🔍 'HIER GEHT'S WEITER' not visible, trying scroll and alternative locators...");
-                
-                // Try scrolling to find the button
-                for (int i = 0; i < 3; i++) {
-                    scrollDown();
-                    Thread.sleep(1000);
-                    
+
+            for (int i = 0; i < 3; i++) {
+                scrollDown();
+                Thread.sleep(1000);
+
+                List<By> possibleLocators = Arrays.asList(
+                        BildAppLocators.getLocators(BildElementType.SEARCH_BUTTON)[0] // replace with actual type
+                );
+
+                for (By locator : possibleLocators) {
                     try {
-                        weiterButton = driver.findElement(BildAppLocators.BILD_HIER_GEHTS_WEITER);
+                        weiterButton = driver.findElement(locator);
                         if (weiterButton.isDisplayed()) {
-                            System.out.println("✅ 'HIER GEHT'S WEITER' button found after scroll " + (i + 1));
-                            break;
+                            weiterButton.click();
+                            logger.info("✅ 'HIER GEHT'S WEITER' button clicked successfully");
+                            MobileTestUtils.waitForPageToLoad(driver);
+                            return;
                         }
-                    } catch (Exception e2) {
-                        // Try alternative text patterns
-                        try {
-                            weiterButton = driver.findElement(io.appium.java_client.AppiumBy.androidUIAutomator(
-                                "new UiSelector().textContains(\"WEITER\")"));
-                            if (weiterButton.isDisplayed()) {
-                                System.out.println("✅ Button found with alternative locator 'WEITER'");
-                                break;
-                            }
-                        } catch (Exception e3) {
-                            System.out.println("⚠️ Scroll attempt " + (i + 1) + " - button still not found");
-                        }
-                    }
+                    } catch (Exception ignored) {}
                 }
             }
-            
-            if (weiterButton != null && weiterButton.isDisplayed()) {
-                weiterButton.click();
-                System.out.println("✅ 'HIER GEHT'S WEITER' button clicked successfully");
-                MobileTestUtils.waitForPageToLoad(driver);
-            } else {
-                System.out.println("⚠️ 'HIER GEHT'S WEITER' button not found or not clickable");
-            }
-            
+
+            logger.warn("⚠️ 'HIER GEHT'S WEITER' button not found");
+
         } catch (Exception e) {
-            System.out.println("⚠️ Error clicking 'HIER GEHT'S WEITER' button: " + e.getMessage());
+            logger.error("⚠️ Error clicking 'HIER GEHT'S WEITER' button: " + e.getMessage());
+        }
+    }
+
+    private void checkHierGehtsWeiterElement() {
+        if (MobileTestUtils.isElementPresent(driver, BildAppLocators.getLocators(BildElementType.HIER_GEHTS_WEITER)[0])) {
+            logger.info("✅ 'HIER GEHT'S WEITER' element found - goBack should work properly");
+        } else {
+            logger.warn("⚠️ 'HIER GEHT'S WEITER' element not found - goBack may not work as expected");
         }
     }
 
     public void completePostLoginNavigation() {
         clickStartseite();
         clickPremiumMarkerIfPresent();
-        
-        // Check if "HIER GEHT'S WEITER" element is present before going back
-        if (MobileTestUtils.isElementPresent(driver, BildAppLocators.BILD_HIER_GEHTS_WEITER)) {
-            System.out.println("✅ 'HIER GEHT'S WEITER' element found - goBack should work properly");
-        } else {
-            System.out.println("⚠️ 'HIER GEHT'S WEITER' element not found - goBack may not work as expected");
-        }
+        checkHierGehtsWeiterElement();
     }
 }
-

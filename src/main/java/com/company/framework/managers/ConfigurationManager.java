@@ -1,41 +1,38 @@
 package com.company.framework.managers;
 
-import com.company.framework.interfaces.IConfigurationManager;
 import com.company.framework.config.FrameworkConfig;
+import com.company.framework.interfaces.IConfigurationManager;
 
 import java.util.Properties;
 
-/**
- * ConfigurationManager - Implementation of IConfigurationManager
- * Follows Single Responsibility Principle
- */
 public class ConfigurationManager implements IConfigurationManager {
-    
+    private final Properties cachedProps;
+
+    public ConfigurationManager() {
+        cachedProps = FrameworkConfig.loadProperties("framework.properties");
+    }
+
     @Override
     public Properties loadProperties(String fileName) {
-        return FrameworkConfig.loadProperties(fileName);
+        return cachedProps; // return cached instead of reading every time
     }
-    
+
     @Override
     public String getProperty(String key, String defaultValue) {
-        // This could be enhanced to cache properties from multiple files
-        Properties props = loadProperties("framework.properties");
-        return props.getProperty(key, defaultValue);
+        return cachedProps.getProperty(key, defaultValue);
     }
-    
+
     @Override
     public int getIntProperty(String key, int defaultValue) {
-        String value = getProperty(key, String.valueOf(defaultValue));
         try {
-            return Integer.parseInt(value);
+            return Integer.parseInt(getProperty(key, String.valueOf(defaultValue)));
         } catch (NumberFormatException e) {
             return defaultValue;
         }
     }
-    
+
     @Override
     public boolean getBooleanProperty(String key, boolean defaultValue) {
-        String value = getProperty(key, String.valueOf(defaultValue));
-        return Boolean.parseBoolean(value);
+        return Boolean.parseBoolean(getProperty(key, String.valueOf(defaultValue)));
     }
 }

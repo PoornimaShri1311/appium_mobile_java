@@ -92,4 +92,5 @@ public class BildHomePageTest extends BaseTestMobile {
 
     logTestStep("✅ Premium Bild Article Verification completed successfully");
     }
+
 }
