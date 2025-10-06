@@ -1,4 +1,4 @@
-package com.company.framework.interfaces;
+package com.company.framework.interfaces.actions;
 
 /**
  * IVerificationActions - Interface for verification-specific actions

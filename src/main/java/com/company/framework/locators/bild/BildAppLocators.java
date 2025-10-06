@@ -25,7 +25,8 @@ public class BildAppLocators {
                 PASSWORD_FIELD,
                 LOGIN_BUTTON,
                 STARTSEITE,
-                HIER_GEHTS_WEITER
+                HIER_GEHTS_WEITER,
+                BACK_BUTTON
         }
 
     private static final Map<BildElementType, By[]> locatorMap = new HashMap<>();
@@ -126,6 +127,15 @@ public class BildAppLocators {
 
         locatorMap.put(BildElementType.SEARCH_RESULT_ITEM, new By[]{
                 By.xpath("//android.widget.TextView[contains(@text, 'Test')]")
+        });
+
+        // =================== BACK BUTTON LOCATORS ===================
+        locatorMap.put(BildElementType.BACK_BUTTON, new By[]{
+                By.xpath("//android.widget.ImageButton[@content-desc='Navigate up']"),
+                By.xpath("//*[@content-desc='Back' or @content-desc='back']"),
+                By.xpath("//android.widget.Button[contains(@text, 'Back') or contains(@text, 'Zurück')]"),
+                By.xpath("//*[contains(@class, 'BackButton') or contains(@resource-id, 'back')]"),
+                By.xpath("//android.widget.ImageView[@content-desc='Navigate up']")
         });
     }
 

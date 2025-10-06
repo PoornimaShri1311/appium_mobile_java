@@ -1,7 +1,7 @@
 package com.company.framework.managers;
 
 import com.company.framework.config.FrameworkConfig;
-import com.company.framework.interfaces.IConfigurationManager;
+import com.company.framework.interfaces.config.IConfigurationManager;
 
 import java.util.Properties;
 

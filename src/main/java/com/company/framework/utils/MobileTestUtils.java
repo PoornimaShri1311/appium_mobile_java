@@ -1,6 +1,8 @@
 package com.company.framework.utils;
 
 import io.appium.java_client.AppiumDriver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Pause;
@@ -34,6 +36,7 @@ import java.util.List;
  */
 public class MobileTestUtils {
     
+    private static final Logger logger = LogManager.getLogger(MobileTestUtils.class);
     private static final int DEFAULT_TIMEOUT_SECONDS = 10;
     private static final int SHORT_TIMEOUT_SECONDS = 5;
     
@@ -49,22 +52,22 @@ public class MobileTestUtils {
      */
     public static void waitForPageToLoad(AppiumDriver driver, int timeoutSeconds) {
         try {
-            long startTime = System.currentTimeMillis();
-            long timeoutMs = timeoutSeconds * 1000L;
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds));
             
-            while (System.currentTimeMillis() - startTime < timeoutMs) {
-                String pageSource = driver.getPageSource();
-                if (pageSource != null && pageSource.length() > 1000) {
-                    System.out.println("✅ Page loaded with content (" + pageSource.length() + " chars)");
-                    return;
+            // Wait for page source to be available with meaningful content
+            wait.until(d -> {
+                try {
+                    String pageSource = d.getPageSource();
+                    return pageSource != null && pageSource.length() > 1000;
+                } catch (Exception e) {
+                    return false;
                 }
-                Thread.sleep(500);
-            }
+            });
             
-            System.out.println("⚠️ Page load timeout reached, but continuing...");
+            logger.info("✅ Page loaded successfully");
             
         } catch (Exception e) {
-            System.out.println("⚠️ Warning during page load: " + e.getMessage());
+            logger.warn("⚠️ Warning during page load: {}", e.getMessage());
         }
     }
     
@@ -83,7 +86,7 @@ public class MobileTestUtils {
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds));
             return wait.until(ExpectedConditions.elementToBeClickable(locator));
         } catch (TimeoutException e) {
-            System.out.println("⚠️ Element not clickable within " + timeoutSeconds + " seconds: " + locator);
+            logger.warn("⚠️ Element not clickable within {} seconds: {}", timeoutSeconds, locator);
             throw e;
         }
     }
@@ -103,7 +106,7 @@ public class MobileTestUtils {
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds));
             return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
         } catch (TimeoutException e) {
-            System.out.println("⚠️ Element not visible within " + timeoutSeconds + " seconds: " + locator);
+            logger.warn("⚠️ Element not visible within {} seconds: {}", timeoutSeconds, locator);
             throw e;
         }
     }
@@ -122,10 +125,10 @@ public class MobileTestUtils {
         try {
             WebElement element = waitForElementClickable(driver, locator, timeoutSeconds);
             element.click();
-            System.out.println("✅ Successfully clicked element: " + locator);
+            logger.info("✅ Successfully clicked element: {}", locator);
             return true;
         } catch (Exception e) {
-            System.out.println("⚠️ Failed to click element: " + locator + " - " + e.getMessage());
+            logger.warn("⚠️ Failed to click element: {} - {}", locator, e.getMessage());
             return false;
         }
     }
@@ -145,10 +148,10 @@ public class MobileTestUtils {
             WebElement element = waitForElementVisible(driver, locator, timeoutSeconds);
             element.clear();
             element.sendKeys(text);
-            System.out.println("✅ Successfully typed text into element: " + locator);
+            logger.info("✅ Successfully typed text into element: {}", locator);
             return true;
         } catch (Exception e) {
-            System.out.println("⚠️ Failed to type into element: " + locator + " - " + e.getMessage());
+            logger.warn("⚠️ Failed to type into element: {} - {}", locator, e.getMessage());
             return false;
         }
     }
@@ -185,7 +188,7 @@ public class MobileTestUtils {
             WebElement element = waitForElementVisible(driver, locator, SHORT_TIMEOUT_SECONDS);
             return element.getText();
         } catch (Exception e) {
-            System.out.println("⚠️ Failed to get text from element: " + locator);
+            logger.warn("⚠️ Failed to get text from element: {}", locator);
             return "";
         }
     }
@@ -198,7 +201,7 @@ public class MobileTestUtils {
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds));
             return wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(locator));
         } catch (TimeoutException e) {
-            System.out.println("⚠️ Elements not found within " + timeoutSeconds + " seconds: " + locator);
+            logger.warn("⚠️ Elements not found within {} seconds: {}", timeoutSeconds, locator);
             return List.of(); // Return empty list instead of throwing
         }
     }
@@ -215,25 +218,25 @@ public class MobileTestUtils {
      */
     public static boolean waitForAppResponsive(AppiumDriver driver, int timeoutSeconds) {
         try {
-            long startTime = System.currentTimeMillis();
-            long timeoutMs = timeoutSeconds * 1000L;
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds));
             
-            while (System.currentTimeMillis() - startTime < timeoutMs) {
+            // Wait for page source to be available and non-empty
+            wait.until(d -> {
                 try {
-                    String pageSource = driver.getPageSource();
-                    if (pageSource != null && pageSource.length() > 100) {
-                        return true;
-                    }
+                    String pageSource = d.getPageSource();
+                    return pageSource != null && pageSource.length() > 100;
                 } catch (Exception e) {
-                    // Continue trying
+                    return false;
                 }
-                Thread.sleep(500);
-            }
+            });
             
+            logger.info("✅ App is responsive");
+            return true;
+        } catch (TimeoutException e) {
+            logger.warn("⚠️ App did not become responsive within {} seconds", timeoutSeconds);
             return false;
-            
         } catch (Exception e) {
-            System.out.println("⚠️ Error checking app responsiveness: " + e.getMessage());
+            logger.warn("⚠️ Error checking app responsiveness: {}", e.getMessage());
             return false;
         }
     }
@@ -252,7 +255,7 @@ public class MobileTestUtils {
             }
             return false;
         } catch (Exception e) {
-            System.out.println("⚠️ Error checking BILD app status: " + e.getMessage());
+            logger.warn("⚠️ Error checking BILD app status: {}", e.getMessage());
             return false;
         }
     }
@@ -268,7 +271,7 @@ public class MobileTestUtils {
             }
             return "unknown";
         } catch (Exception e) {
-            System.out.println("⚠️ Error getting app package: " + e.getMessage());
+            logger.warn("⚠️ Error getting app package: {}", e.getMessage());
             return "error";
         }
     }
@@ -277,8 +280,7 @@ public class MobileTestUtils {
      * Take screenshot (placeholder for future implementation)
      */
     public static String takeScreenshot(AppiumDriver driver, String testName) {
-        // TODO: Implement screenshot functionality
-        System.out.println("📸 Screenshot placeholder for: " + testName);
+        logger.info("📸 Screenshot placeholder for: {}", testName);
         return "screenshot_" + testName + "_" + System.currentTimeMillis() + ".png";
     }
 

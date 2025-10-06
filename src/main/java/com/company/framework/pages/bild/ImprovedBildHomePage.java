@@ -4,6 +4,7 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.PageFactory;
 
@@ -30,6 +31,7 @@ public class ImprovedBildHomePage extends com.company.framework.pages.ImprovedBa
     private final BildHomeNavigationActions navigationActions;
     private final BildHomeSearchActions searchActions;
     private final BildHomeVerificationActions verificationActions;
+    private final com.company.framework.utils.ScrollActions scrollActions;
 
     /**
      * Constructor using Dependency Injection
@@ -42,7 +44,8 @@ public class ImprovedBildHomePage extends com.company.framework.pages.ImprovedBa
         PageFactory.initElements(new AppiumFieldDecorator(driver), this.elements);
         
         // Initialize action components with dependencies
-        this.navigationActions = new BildHomeNavigationActions(getPageActions(), elements, driver);
+        this.scrollActions = new com.company.framework.utils.ScrollActions(driver);
+        this.navigationActions = new BildHomeNavigationActions(getPageActions(), scrollActions, elements, driver);
         this.searchActions = new BildHomeSearchActions(getPageActions(), elements, driver);
         this.verificationActions = new BildHomeVerificationActions(getPageActions(), elements);
         
@@ -124,11 +127,7 @@ public class ImprovedBildHomePage extends com.company.framework.pages.ImprovedBa
     public void performSearch(String searchTerm) {
         searchActions.performSearch(searchTerm);
     }
-    
-    public void performSearchWithUmfrage(String searchTerm) {
-        performSearch(searchTerm);
-    }
-    
+      
     public boolean performSearchWorkflow(String searchTerm) {
         return searchActions.performSearchWorkflow(searchTerm);
     }
@@ -163,26 +162,89 @@ public class ImprovedBildHomePage extends com.company.framework.pages.ImprovedBa
      */
     public void waitForSearchResults() {
         try {
-            Thread.sleep(3000); // Wait for search results to load
-            System.out.println("⏳ Waiting for search results to load...");
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            System.out.println("⚠️ Wait interrupted: " + e.getMessage());
+            logger.info("⏳ Waiting for search results to load...");
+            
+            org.openqa.selenium.support.ui.WebDriverWait wait = 
+                new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(10));
+                
+            // Wait for any search result elements to be present
+            By[] searchResultLocators = com.company.framework.locators.bild.BildAppLocators.getLocators(
+                com.company.framework.locators.bild.BildAppLocators.BildElementType.SEARCH_RESULT_ITEM);
+                
+            boolean resultsFound = false;
+            for (By locator : searchResultLocators) {
+                try {
+                    wait.until(org.openqa.selenium.support.ui.ExpectedConditions.presenceOfElementLocated(locator));
+                    resultsFound = true;
+                    logger.info("✅ Search results loaded successfully");
+                    break;
+                } catch (Exception e) {
+                    // Try next locator
+                }
+            }
+            
+            if (!resultsFound) {
+                logger.warn("⚠️ No search results found within timeout period");
+            }
+            
+        } catch (Exception e) {
+            logger.error("⚠️ Error waiting for search results: {}", e.getMessage());
         }
     }
     
     /**
      * Click on the first/specific search result item
      * Based on the Appium Inspector recording: View instance 3
+     * Uses scroll functionality to find element before clicking
      */
     public void clickSearchResultItem() {
         try {
+            String searchText = "Test";
+            logger.info("Attempting to scroll to and click search result with text: {}", searchText);
+            
+            // First try to find the element and scroll to it if needed
+            By searchResultLocator = com.company.framework.locators.bild.BildAppLocators.getSearchResultByText(searchText);
+            List<WebElement> searchResults = driver.findElements(searchResultLocator);
+            
+            if (!searchResults.isEmpty()) {
+                WebElement targetElement = searchResults.get(0);
+                try {
+                    scrollActions.scrollToElement(targetElement);
+                    logger.info("Successfully scrolled to search result element");
+                } catch (Exception e) {
+                    logger.warn("Could not scroll to element: {}, trying direct click", e.getMessage());
+                }
+            } else {
+                logger.warn("Search result element not found initially, will try after wait");
+            }
+            
+            // Now try to click the element (it should be visible after scroll)
             WebElement resultItem = com.company.framework.utils.MobileTestUtils.waitForElementClickable(
-                driver, com.company.framework.locators.bild.BildAppLocators.getSearchResultByText("Test"), 10);
-            resultItem.click();
-            System.out.println("✅ Clicked on search result item successfully");
+                driver, com.company.framework.locators.bild.BildAppLocators.getSearchResultByText(searchText), 10);
+            
+            try {
+                getPageActions().waitAndClick(resultItem);
+                logger.info("Successfully clicked on search result item using standard click");
+            } catch (Exception clickException) {
+                logger.warn("Standard click failed: {}, trying coordinate-based click", clickException.getMessage());
+                // Fallback to coordinate-based click
+                try {
+                    org.openqa.selenium.Point location = resultItem.getLocation();
+                    org.openqa.selenium.Dimension size = resultItem.getSize();
+                    int centerX = location.getX() + size.getWidth() / 2;
+                    int centerY = location.getY() + size.getHeight() / 2;
+                    
+                    com.company.framework.utils.TouchActionUtils touchUtils = new com.company.framework.utils.TouchActionUtils(driver);
+                    touchUtils.tapAtCoordinates(centerX, centerY, 100);
+                    logger.info("Successfully clicked search result using coordinates: ({}, {})", centerX, centerY);
+                } catch (Exception coordException) {
+                    logger.error("Both standard and coordinate clicks failed: {}", coordException.getMessage());
+                    throw coordException;
+                }
+            }
+            
         } catch (Exception e) {
-            System.out.println("❌ Failed to click search result item: " + e.getMessage());
+            logger.error("Failed to click search result item: {}", e.getMessage());
             throw new RuntimeException("Search result click failed", e);
         }
     }

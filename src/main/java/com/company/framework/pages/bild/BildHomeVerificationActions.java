@@ -1,9 +1,11 @@
 package com.company.framework.pages.bild;
 
-import com.company.framework.interfaces.IVerificationActions;
-import com.company.framework.interfaces.IPageActions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.company.framework.interfaces.actions.IPageActions;
+import com.company.framework.interfaces.actions.IScrollActions;
+import com.company.framework.interfaces.actions.IVerificationActions;
 
 /**
  * BildHomeVerificationActions - Handles verification actions for BILD home page
@@ -117,7 +119,7 @@ public class BildHomeVerificationActions implements IVerificationActions {
         try {
             logger.info("Checking if BILD Premium element is displayed");
             // First scroll to make element visible
-            pageActions.scrollToElement(elements.getBildPremiumElement());
+            ((IScrollActions) pageActions).scrollToElement(elements.getBildPremiumElement());
             
             // Try to wait for visibility
             boolean isDisplayed = pageActions.isDisplayed(elements.getBildPremiumElement());

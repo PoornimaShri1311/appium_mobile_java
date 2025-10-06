@@ -1,7 +1,7 @@
 package com.company.framework.pages.bild;
 
-import com.company.framework.interfaces.ISearchActions;
-import com.company.framework.interfaces.IPageActions;
+import com.company.framework.interfaces.actions.IPageActions;
+import com.company.framework.interfaces.actions.ISearchActions;
 import com.company.framework.locators.bild.BildAppLocators;
 import com.company.framework.locators.bild.BildAppLocators.BildElementType;
 import com.company.framework.utils.TouchActionUtils;
@@ -28,15 +28,14 @@ public class BildHomeSearchActions implements ISearchActions {
     private final BildHomeElements elements;
     private final AppiumDriver driver;
     private final TouchActionUtils touchActions;
-
-    private static final long DELAY_SEARCH_EXECUTION = 3000;
-    private static final long DELAY_AFTER_TYPE = 1000;
+    private final WaitUtils waitUtils;
 
     public BildHomeSearchActions(IPageActions pageActions, BildHomeElements elements, AppiumDriver driver) {
         this.pageActions = pageActions;
         this.elements = elements;
         this.driver = driver;
         this.touchActions = new TouchActionUtils(driver);
+        this.waitUtils = new WaitUtils(10);
     }
 
     @Override
@@ -52,7 +51,49 @@ public class BildHomeSearchActions implements ISearchActions {
             throw new RuntimeException("Search input field not found");
         }
 
-        pageActions.enterText(searchField, searchTerm);
+        // Enhanced text entry with multiple fallback approaches
+        boolean textEntered = false;
+        
+        try {
+            // Approach 1: Clear field first, then enter text
+            searchField.clear();
+            searchField.sendKeys(searchTerm);
+            
+            // Verify text was entered
+            String enteredText = searchField.getText();
+            if (enteredText != null && enteredText.contains(searchTerm)) {
+                textEntered = true;
+                logger.info("Successfully entered text '{}' using direct sendKeys", searchTerm);
+            }
+        } catch (Exception e) {
+            logger.warn("Direct sendKeys failed: {}", e.getMessage());
+        }
+        
+        if (!textEntered) {
+            try {
+                // Approach 2: Use page actions enterText method
+                pageActions.enterText(searchField, searchTerm);
+                textEntered = true;
+                logger.info("Successfully entered text '{}' using pageActions", searchTerm);
+            } catch (Exception e) {
+                logger.warn("PageActions enterText failed: {}", e.getMessage());
+            }
+        }
+        
+        if (!textEntered) {
+            // Approach 3: Focus element first, then enter text
+            try {
+                searchField.click(); // Focus the element
+                waitUtils.waitForVisibility(searchField); // Wait for element to be visible and stable after focus
+                searchField.clear();
+                searchField.sendKeys(searchTerm);
+                logger.info("Successfully entered text '{}' using click-focus approach", searchTerm);
+                textEntered = true;
+            } catch (Exception e) {
+                logger.error("All text entry approaches failed: {}", e.getMessage());
+                throw new RuntimeException("Failed to enter search term: " + searchTerm);
+            }
+        }
 
         // Tap suggestion
         tapSearchSuggestionWithTestData();
@@ -148,25 +189,38 @@ public class BildHomeSearchActions implements ISearchActions {
             // Try element from page object first
             WebElement searchBtn = elements.getSearchButton();
             if (pageActions.isDisplayed(searchBtn)) {
+                logger.info("Found search button from page elements, clicking it");
                 pageActions.waitAndClick(searchBtn);
                 return true;
             }
+        } catch (Exception e) {
+            logger.warn("Page element search button not available: {}", e.getMessage());
+        }
 
+        try {
             // Fallback to BildAppLocators dynamic locators
             By[] searchButtonLocators = BildAppLocators.getLocators(BildElementType.SEARCH_BUTTON_ALTERNATIVES);
-            for (By locator : searchButtonLocators) {
+            logger.info("Trying {} search button locators", searchButtonLocators.length);
+            
+            for (int i = 0; i < searchButtonLocators.length; i++) {
+                By locator = searchButtonLocators[i];
                 List<WebElement> found = driver.findElements(locator);
+                logger.info("Locator {}: {} - Found {} elements", i, locator, found.size());
+                
                 if (!found.isEmpty()) {
+                    logger.info("Clicking search button found with locator: {}", locator);
                     found.get(0).click();
                     return true;
                 }
             }
-
         } catch (Exception e) {
-            logger.error("Failed to open search: {}", e.getMessage());
+            logger.error("Failed to open search using alternative locators: {}", e.getMessage());
         }
 
-        return isSearchInputAvailable();
+        // Check if search input is already available (search might already be open)
+        boolean searchAvailable = isSearchInputAvailable();
+        logger.info("Search input already available: {}", searchAvailable);
+        return searchAvailable;
     }
 
     private boolean isSearchInputAvailable() {
@@ -180,22 +234,69 @@ public class BildHomeSearchActions implements ISearchActions {
     }
 
     private WebElement findSearchInput() {
+        // Priority 1: Try direct EditText class name (most reliable for text input)
+        try {
+            List<WebElement> editTextElements = driver.findElements(io.appium.java_client.AppiumBy.className("android.widget.EditText"));
+            if (!editTextElements.isEmpty()) {
+                WebElement editText = editTextElements.get(0); // Get first available EditText
+                if (editText.isDisplayed() && editText.isEnabled()) {
+                    logger.info("Found EditText element using className locator");
+                    return editText;
+                }
+            }
+        } catch (Exception e) {
+            logger.debug("EditText className search failed: {}", e.getMessage());
+        }
+
+        // Priority 2: Try primary search locators
+        By[] primarySearchLocators = BildAppLocators.getLocators(BildElementType.SEARCH);
+        for (By locator : primarySearchLocators) {
+            List<WebElement> inputs = driver.findElements(locator);
+            for (WebElement input : inputs) {
+                if (isTextInputElement(input)) {
+                    logger.info("Found text input element using primary locator: {}", locator);
+                    return input;
+                }
+            }
+        }
+
+        // Priority 3: Try alternative locators
+        By[] searchInputLocators = BildAppLocators.getLocators(BildElementType.SEARCH_INPUT_ALTERNATIVES);
+        for (By locator : searchInputLocators) {
+            List<WebElement> inputs = driver.findElements(locator);
+            for (WebElement input : inputs) {
+                if (isTextInputElement(input)) {
+                    logger.info("Found text input element using alternative locator: {}", locator);
+                    return input;
+                }
+            }
+        }
+
+        // Priority 4: Last resort - page elements method
         try {
             WebElement element = elements.getSearchInput();
-            if (pageActions.isDisplayed(element)) {
+            if (pageActions.isDisplayed(element) && isTextInputElement(element)) {
+                logger.info("Found text input element using page elements method");
                 return element;
             }
         } catch (Exception ignored) {}
 
-        By[] searchInputLocators = BildAppLocators.getLocators(BildElementType.SEARCH_INPUT_ALTERNATIVES);
-        for (By locator : searchInputLocators) {
-            List<WebElement> inputs = driver.findElements(locator);
-            if (!inputs.isEmpty()) {
-                return inputs.get(0);
-            }
-        }
-
+        logger.warn("No valid text input element found for search");
         return null;
+    }
+
+    private boolean isTextInputElement(WebElement element) {
+        try {
+            String tagName = element.getTagName().toLowerCase();
+            return tagName.equals("android.widget.edittext") || 
+                   tagName.equals("android.widget.autocompletetextview") ||
+                   element.isEnabled() && 
+                   (element.getAttribute("class").contains("EditText") || 
+                    element.getAttribute("class").contains("AutoCompleteTextView"));
+        } catch (Exception e) {
+            logger.debug("Error checking if element is text input: {}", e.getMessage());
+            return false;
+        }
     }
 
     private String getElementText(WebElement element) {

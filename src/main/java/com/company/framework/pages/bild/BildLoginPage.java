@@ -9,6 +9,7 @@ import com.company.framework.locators.bild.BildAppLocators;
 import com.company.framework.locators.bild.BildAppLocators.BildElementType;
 import com.company.framework.utils.MobileTestUtils;
 import com.company.framework.utils.TouchActionUtils;
+import com.company.framework.utils.WaitUtils;
 
 import org.openqa.selenium.interactions.PointerInput;
 import org.openqa.selenium.interactions.Sequence;
@@ -120,22 +121,26 @@ public class BildLoginPage {
         try {
             WebElement weiterButton = null;
 
+            WaitUtils waitUtils = new WaitUtils(5);
+            
             for (int i = 0; i < 3; i++) {
                 scrollDown();
-                Thread.sleep(1000);
-
+                
+                // Wait for elements to be available after scroll
                 List<By> possibleLocators = Arrays.asList(
-                        BildAppLocators.getLocators(BildElementType.SEARCH_BUTTON)[0] // replace with actual type
+                        BildAppLocators.getLocators(BildElementType.HIER_GEHTS_WEITER)[0]
                 );
 
                 for (By locator : possibleLocators) {
                     try {
-                        weiterButton = driver.findElement(locator);
-                        if (weiterButton.isDisplayed()) {
-                            weiterButton.click();
-                            logger.info("✅ 'HIER GEHT'S WEITER' button clicked successfully");
-                            MobileTestUtils.waitForPageToLoad(driver);
-                            return;
+                        if (waitUtils.waitForElementsToBePresent(locator)) {
+                            weiterButton = driver.findElement(locator);
+                            if (weiterButton.isDisplayed()) {
+                                weiterButton.click();
+                                logger.info("✅ 'HIER GEHT'S WEITER' button clicked successfully");
+                                MobileTestUtils.waitForPageToLoad(driver);
+                                return;
+                            }
                         }
                     } catch (Exception ignored) {}
                 }

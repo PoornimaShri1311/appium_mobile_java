@@ -3,7 +3,7 @@ package com.company.framework.reporting;
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
-import com.company.framework.interfaces.IReportingManager;
+import com.company.framework.interfaces.reporting.IReportingManager;
 import com.company.framework.utils.TestReportingUtils;
 import org.openqa.selenium.WebDriver;
 

@@ -1,4 +1,4 @@
-package com.company.framework.interfaces;
+package com.company.framework.interfaces.wait;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -38,9 +38,4 @@ public interface IWaitStrategy {
      */
     boolean waitForTextToBePresentInElement(WebElement element, String text);
     
-    /**
-     * Scroll to make an element visible using mobile-specific scrolling
-     * @param element WebElement to scroll to
-     */
-    void scrollToElement(WebElement element);
 }

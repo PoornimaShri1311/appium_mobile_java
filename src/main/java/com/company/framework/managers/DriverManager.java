@@ -1,8 +1,8 @@
 package com.company.framework.managers;
 
 import com.company.framework.config.FrameworkConfig;
-import com.company.framework.interfaces.IConfigurationManager;
-import com.company.framework.interfaces.IDriverManager;
+import com.company.framework.interfaces.config.IConfigurationManager;
+import com.company.framework.interfaces.driver.IDriverManager;
 import com.company.framework.utils.MobileDeviceUtils;
 import io.appium.java_client.AppiumDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
@@ -32,12 +32,14 @@ public class DriverManager implements IDriverManager {
     public void initializeDriver() {
         if (driver != null) return;
 
-        DesiredCapabilities capabilities = MobileDeviceUtils.getPlatformCapabilities("android");
+        // Get platform from configuration instead of hardcoding
+        String platform = configManager.getProperty("platformName", "Android");
+        DesiredCapabilities capabilities = MobileDeviceUtils.getPlatformCapabilities(platform);
 
         String appiumServer = FrameworkConfig.getAppiumServerUrl();
         if (appiumServer == null || appiumServer.isEmpty()) {
             Properties props = configManager.loadProperties("capabilities.properties");
-            appiumServer = props.getProperty("appiumServer", "http://127.0.0.1:4723/wd/hub");
+            appiumServer = props.getProperty("appiumServer", FrameworkConfig.getAppiumServerUrl());
         }
 
         try {

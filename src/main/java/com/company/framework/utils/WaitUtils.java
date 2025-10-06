@@ -17,25 +17,38 @@ public class WaitUtils {
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutInSeconds));
     }
 
-    public void waitForElementToBeClickableAndClick(WebElement element) {
-        wait.until(ExpectedConditions.elementToBeClickable(element)).click();
-    }
+    // Removed: Use PageActions.waitAndClick() instead
 
     public WebElement waitForVisibility(WebElement element) {
         return wait.until(ExpectedConditions.visibilityOf(element));
+    }
+
+    public WebElement waitForClickability(WebElement element) {
+        return wait.until(ExpectedConditions.elementToBeClickable(element));
     }
 
     public boolean waitForInvisibility(By locator) {
         return wait.until(ExpectedConditions.invisibilityOfElementLocated(locator));
     }
 
-    public void waitForElementAndType(WebElement element, String text) {
-        wait.until(ExpectedConditions.visibilityOf(element)).sendKeys(text);
+    public boolean waitForTextToBePresentInElement(WebElement element, String text) {
+        return wait.until(ExpectedConditions.textToBePresentInElement(element, text));
     }
+
+    // Removed: Use PageActions.enterText() with wait strategy instead
 
     public String waitForTextToBePresent(WebElement element) {
         wait.until(ExpectedConditions.visibilityOf(element));
         return element.getText();
+    }
+
+    /**
+     * Waits for element to be clickable with By locator
+     * @param locator The By locator to find element
+     * @return clickable WebElement
+     */
+    public WebElement waitForElementClickable(By locator) {
+        return wait.until(ExpectedConditions.elementToBeClickable(locator));
     }
 
     /**

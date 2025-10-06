@@ -1,7 +1,8 @@
 package com.company.framework.utils;
 
-import com.company.framework.interfaces.IWaitStrategy;
-import com.company.framework.interfaces.IDriverManager;
+import com.company.framework.interfaces.driver.IDriverManager;
+import com.company.framework.interfaces.wait.IWaitStrategy;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -42,7 +43,6 @@ public class ExplicitWaitStrategy implements IWaitStrategy {
         return wait.until(ExpectedConditions.textToBePresentInElement(element, text));
     }
     
-    @Override
     public void scrollToElement(WebElement element) {
         // For mobile apps, use TouchActionUtils directly for mobile-optimized scrolling
         AppiumDriver driver = com.company.framework.managers.DependencyManager.getInstance().getDriverManager().getDriver();

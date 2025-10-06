@@ -1,11 +1,15 @@
 package com.company.framework.pages.bild;
 
-import com.company.framework.interfaces.INavigationActions;
-import com.company.framework.interfaces.IPageActions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+
+import com.company.framework.interfaces.actions.INavigationActions;
+import com.company.framework.interfaces.actions.IPageActions;
+import com.company.framework.interfaces.actions.IScrollActions;
+import com.company.framework.locators.bild.BildAppLocators;
+
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.nativekey.AndroidKey;
@@ -20,11 +24,13 @@ public class BildHomeNavigationActions implements INavigationActions {
     
     private static final Logger logger = LogManager.getLogger(BildHomeNavigationActions.class);
     private final IPageActions pageActions;
+    private final IScrollActions scrollActions;
     private final BildHomeElements elements;
     private final AppiumDriver driver;
     
-    public BildHomeNavigationActions(IPageActions pageActions, BildHomeElements elements, AppiumDriver driver) {
+    public BildHomeNavigationActions(IPageActions pageActions, IScrollActions scrollActions, BildHomeElements elements, AppiumDriver driver) {
         this.pageActions = pageActions;
+        this.scrollActions = scrollActions;
         this.elements = elements;
         this.driver = driver;
     }
@@ -32,6 +38,7 @@ public class BildHomeNavigationActions implements INavigationActions {
     // Backward compatibility constructor
     public BildHomeNavigationActions(IPageActions pageActions, BildHomeElements elements) {
         this.pageActions = pageActions;
+        this.scrollActions = null; // Will need to be handled in methods
         this.elements = elements;
         this.driver = null; // Will need to be handled in methods
     }
@@ -98,13 +105,7 @@ public class BildHomeNavigationActions implements INavigationActions {
             
             // Approach 3: Look for back button elements on screen
             try {
-                By[] backButtonLocators = {
-                    By.xpath("//android.widget.ImageButton[@content-desc='Navigate up']"),
-                    By.xpath("//*[@content-desc='Back' or @content-desc='back']"),
-                    By.xpath("//android.widget.Button[contains(@text, 'Back') or contains(@text, 'Zurück')]"),
-                    By.xpath("//*[contains(@class, 'BackButton') or contains(@resource-id, 'back')]"),
-                    By.xpath("//android.widget.ImageView[@content-desc='Navigate up']")
-                };
+                By[] backButtonLocators = BildAppLocators.getLocators(BildAppLocators.BildElementType.BACK_BUTTON);
                 
                 for (By backLocator : backButtonLocators) {
                     try {
@@ -196,7 +197,9 @@ public class BildHomeNavigationActions implements INavigationActions {
     private void clickBildPremium() {
         try {
             // First scroll to make element visible
-            pageActions.scrollToElement(elements.getBildPremiumElement());
+            if (scrollActions != null) {
+                scrollActions.scrollToElement(elements.getBildPremiumElement());
+            }
             pageActions.waitAndClick(elements.getBildPremiumElement());
             logger.info("Clicked on BILD Premium element");
         } catch (Exception e) {

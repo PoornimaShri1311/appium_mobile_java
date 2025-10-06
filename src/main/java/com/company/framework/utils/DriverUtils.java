@@ -1,8 +1,8 @@
 package com.company.framework.utils;
 
+import com.company.framework.interfaces.driver.IDriverManager;
 import com.company.framework.managers.DependencyManager;
 import io.appium.java_client.AppiumDriver;
-import com.company.framework.interfaces.IDriverManager;
 
 /**
  * DriverUtils - Legacy wrapper for backward compatibility

@@ -1,9 +1,9 @@
 package com.company.framework.managers;
 
-import com.company.framework.interfaces.IConfigurationManager;
-import com.company.framework.interfaces.IDriverManager;
-import com.company.framework.interfaces.IPageActions;
-import com.company.framework.interfaces.IWaitStrategy;
+import com.company.framework.interfaces.actions.IPageActions;
+import com.company.framework.interfaces.config.IConfigurationManager;
+import com.company.framework.interfaces.driver.IDriverManager;
+import com.company.framework.interfaces.wait.IWaitStrategy;
 import com.company.framework.utils.ExplicitWaitStrategy;
 import com.company.framework.utils.PageActions;
 

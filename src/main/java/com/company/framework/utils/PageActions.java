@@ -1,7 +1,8 @@
 package com.company.framework.utils;
 
-import com.company.framework.interfaces.IPageActions;
-import com.company.framework.interfaces.IWaitStrategy;
+import com.company.framework.interfaces.actions.IPageActions;
+import com.company.framework.interfaces.wait.IWaitStrategy;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebElement;
@@ -76,17 +77,6 @@ public class PageActions implements IPageActions {
         } catch (Exception e) {
             logger.error("Failed to get text from element: " + e.getMessage());
             throw new RuntimeException("Get text operation failed", e);
-        }
-    }
-    
-    @Override
-    public void scrollToElement(WebElement element) {
-        try {
-            waitStrategy.scrollToElement(element);
-            logger.info("Scrolled to element successfully");
-        } catch (Exception e) {
-            logger.error("Failed to scroll to element: " + e.getMessage());
-            throw new RuntimeException("Scroll operation failed", e);
         }
     }
 }

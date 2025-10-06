@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.net.URI;
-import java.net.MalformedURLException;
 import java.util.Properties;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -177,7 +176,6 @@ public class MobileDeviceUtils {
     /**
      * Load device matrix from JSON configuration
      */
-    @SuppressWarnings("unchecked")
     public static void loadDeviceMatrix() {
         try (InputStream inputStream = MobileDeviceUtils.class.getClassLoader()
                 .getResourceAsStream("device-matrix.json")) {
@@ -205,7 +203,6 @@ public class MobileDeviceUtils {
     /**
      * Create default device matrix if configuration file is not found
      */
-    @SuppressWarnings("unchecked")
     private static void createDefaultMatrix() {
         Map<String, Object> defaultMatrix = new HashMap<>();
         

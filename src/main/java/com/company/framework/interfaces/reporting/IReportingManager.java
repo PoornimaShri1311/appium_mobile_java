@@ -1,4 +1,4 @@
-package com.company.framework.interfaces;
+package com.company.framework.interfaces.reporting;
 
 import com.aventstack.extentreports.ExtentTest;
 import org.openqa.selenium.WebDriver;

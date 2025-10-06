@@ -1,10 +1,17 @@
 package com.company.framework.pages;
 
-import com.company.framework.interfaces.IPageActions;
-import com.company.framework.interfaces.IWaitStrategy;
+import com.company.framework.interfaces.actions.IPageActions;
+import com.company.framework.interfaces.actions.IScrollActions;
+import com.company.framework.interfaces.wait.IWaitStrategy;
+
 import io.appium.java_client.AppiumDriver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.time.Duration;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 
 /**
  * ImprovedBasePage - Base class for all page objects
@@ -14,9 +21,11 @@ public abstract class ImprovedBasePage {
     
     private static final Logger logger = LogManager.getLogger(ImprovedBasePage.class);
     protected final AppiumDriver driver;
+    protected final WebDriverWait wait;
     
     public ImprovedBasePage(AppiumDriver driver) {
         this.driver = driver;
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
     
     /**
@@ -49,17 +58,19 @@ public abstract class ImprovedBasePage {
     protected void waitForPageToLoad() {
         // Default implementation - can be overridden
         try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.warn("Wait interrupted: {}", e.getMessage());
+            // Wait for page readiness using WebDriverWait instead of sleep
+            WebDriverWait pageWait = new WebDriverWait(driver, Duration.ofSeconds(2));
+            pageWait.until(driver -> ((JavascriptExecutor) driver)
+                .executeScript("return document.readyState").equals("complete"));
+        } catch (Exception e) {
+            logger.warn("Page stabilization wait failed: {}", e.getMessage());
         }
     }
     
     /**
      * Simple PageActions implementation for basic operations
      */
-    private static class SimplePageActions implements IPageActions {
+    private static class SimplePageActions implements IPageActions, IScrollActions {
         private final AppiumDriver driver;
         
         public SimplePageActions(AppiumDriver driver) {
@@ -88,25 +99,49 @@ public abstract class ImprovedBasePage {
         
         @Override
         public void waitAndClick(org.openqa.selenium.WebElement element) {
-            // Simple wait and click
+            // Wait for element to be clickable then click
             try {
-                Thread.sleep(1000);
+                WebDriverWait localWait = new WebDriverWait(driver, Duration.ofSeconds(10));
+                localWait.until(ExpectedConditions.elementToBeClickable(element));
                 element.click();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                logger.warn("Wait and click failed: {}", e.getMessage());
+                // Fallback to direct click
+                element.click();
             }
         }
-        
+                
+        @Override
+        public String getText(org.openqa.selenium.WebElement element) {
+            return element.getText();
+        }
+
         @Override
         public void scrollToElement(org.openqa.selenium.WebElement element) {
             // Simple scroll implementation
             driver.executeScript("arguments[0].scrollIntoView(true);", element);
         }
-        
+
         @Override
-        public String getText(org.openqa.selenium.WebElement element) {
-            return element.getText();
-        }
+            public void scrollToText(String visibleText) {
+                // Simple example for Android UiScrollable
+                try {
+                    driver.executeScript("mobile: scroll", 
+                        java.util.Map.of("strategy", "accessibility id", "selector", visibleText));
+                } catch (Exception e) {
+                    // Fallback or log
+                }
+            }
+
+            @Override
+            public void scrollVertically(int pixels) {
+                driver.executeScript("window.scrollBy(0," + pixels + ");");
+            }
+
+            @Override
+            public void scrollHorizontally(int pixels) {
+                driver.executeScript("window.scrollBy(" + pixels + ",0);");
+            }
     }
     
     /**
@@ -121,32 +156,31 @@ public abstract class ImprovedBasePage {
         
         @Override
         public org.openqa.selenium.WebElement waitForVisibility(org.openqa.selenium.WebElement element) {
-            // Simple implementation
             try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                WebDriverWait localWait = new WebDriverWait(driver, Duration.ofSeconds(10));
+                return localWait.until(ExpectedConditions.visibilityOf(element));
+            } catch (Exception e) {
+                // Fallback to return element as-is
+                return element;
             }
-            return element;
         }
         
         @Override
         public org.openqa.selenium.WebElement waitForClickable(org.openqa.selenium.WebElement element) {
-            // Simple implementation
             try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                WebDriverWait localWait = new WebDriverWait(driver, Duration.ofSeconds(10));
+                return localWait.until(ExpectedConditions.elementToBeClickable(element));
+            } catch (Exception e) {
+                // Fallback to return element as-is
+                return element;
             }
-            return element;
         }
         
         @Override
         public boolean waitForInvisibility(org.openqa.selenium.By locator) {
-            // Simple implementation
             try {
-                Thread.sleep(1000);
-                return !driver.findElement(locator).isDisplayed();
+                WebDriverWait localWait = new WebDriverWait(driver, Duration.ofSeconds(10));
+                return localWait.until(ExpectedConditions.invisibilityOfElementLocated(locator));
             } catch (Exception e) {
                 return true; // Assume invisible if not found
             }
@@ -154,19 +188,12 @@ public abstract class ImprovedBasePage {
         
         @Override
         public boolean waitForTextToBePresentInElement(org.openqa.selenium.WebElement element, String text) {
-            // Simple implementation
             try {
-                Thread.sleep(1000);
-                return element.getText().contains(text);
+                WebDriverWait localWait = new WebDriverWait(driver, Duration.ofSeconds(10));
+                return localWait.until(ExpectedConditions.textToBePresentInElement(element, text));
             } catch (Exception e) {
                 return false;
             }
-        }
-        
-        @Override
-        public void scrollToElement(org.openqa.selenium.WebElement element) {
-            // Simple scroll implementation
-            driver.executeScript("arguments[0].scrollIntoView(true);", element);
         }
     }
 }

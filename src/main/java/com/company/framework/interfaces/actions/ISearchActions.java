@@ -1,4 +1,4 @@
-package com.company.framework.interfaces;
+package com.company.framework.interfaces.actions;
 
 import org.openqa.selenium.WebElement;
 import java.util.List;

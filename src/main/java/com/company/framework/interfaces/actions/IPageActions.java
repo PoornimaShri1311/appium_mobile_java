@@ -1,4 +1,4 @@
-package com.company.framework.interfaces;
+package com.company.framework.interfaces.actions;
 
 import org.openqa.selenium.WebElement;
 
@@ -41,9 +41,4 @@ public interface IPageActions {
      */
     String getText(WebElement element);
     
-    /**
-     * Scroll to make an element visible
-     * @param element WebElement to scroll to
-     */
-    void scrollToElement(WebElement element);
 }

@@ -1,4 +1,4 @@
-package com.company.framework.interfaces;
+package com.company.framework.interfaces.driver;
 
 import io.appium.java_client.AppiumDriver;
 

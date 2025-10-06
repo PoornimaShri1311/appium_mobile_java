@@ -87,15 +87,19 @@ public class TestReportingUtils {
      */
     public static String captureScreenshot(WebDriver driver, String screenshotName) {
         File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-        String destPath = "screenshots/" + screenshotName + "_" + System.currentTimeMillis() + ".png";
-
+        String fileName = screenshotName + "_" + System.currentTimeMillis() + ".png";
+        String destPath = "screenshots/" + fileName;
+        
         try {
             Files.createDirectories(Paths.get("screenshots")); // ensure folder exists
             Files.copy(src.toPath(), Paths.get(destPath));
+            
+            // Return relative path that works from reports directory
+            return "../" + destPath;
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         }
-        return destPath;
     }
     
     /**
