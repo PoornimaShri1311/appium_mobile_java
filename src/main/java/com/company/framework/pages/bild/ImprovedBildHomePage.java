@@ -8,7 +8,11 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.PageFactory;
 
-// Components are now in the same package - no import needed
+// Import components from new organized packages
+import com.company.framework.pages.bild.elements.BildHomeElements;
+import com.company.framework.pages.bild.actions.BildHomeNavigationActions;
+import com.company.framework.pages.bild.actions.BildHomeSearchActions;
+import com.company.framework.pages.bild.verifications.BildHomeVerificationActions;
 
 import java.util.List;
 

@@ -2,7 +2,7 @@ package com.company.tests.mobile;
 
 import com.company.framework.base.BaseTestMobile;
 import com.company.framework.pages.bild.ImprovedBildHomePage;
-import com.company.framework.pages.bild.BildHomeNavigationActions;
+import com.company.framework.pages.bild.actions.BildHomeNavigationActions;
 import com.company.framework.pages.bild.BildLoginPage;
 import com.company.framework.utils.TestDataManager;
 import org.testng.annotations.Test;

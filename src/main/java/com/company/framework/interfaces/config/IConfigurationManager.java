@@ -38,4 +38,6 @@ public interface IConfigurationManager {
      * @return property value or default
      */
     boolean getBooleanProperty(String key, boolean defaultValue);
+
+    
 }

@@ -2,153 +2,136 @@ package com.company.framework.base;
 
 import com.aventstack.extentreports.ExtentTest;
 import com.company.framework.interfaces.reporting.IReportingManager;
-import com.company.framework.managers.AppLifecycleManager;
-import com.company.framework.managers.DependencyManager;
-import com.company.framework.managers.ExtentReportingManager;
+import com.company.framework.managers.*;
 import com.company.framework.utils.TestReportingUtils;
 import io.appium.java_client.AppiumDriver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
 
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public abstract class BaseTestMobile {
+
     protected static final Logger logger = LogManager.getLogger(BaseTestMobile.class);
     protected AppiumDriver driver;
-    private static IReportingManager reportingManager;
-    private static String getTimestampedReportPath() {
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-        return "reports/ExtentReport_" + timestamp + ".html";
-    }
-    
-    /**
-     * Get the current report path with timestamp for external reference
-     */
-    public static String getCurrentReportPath() {
-        return getTimestampedReportPath();
-    }
     protected ExtentTest test;
-
     protected AppLifecycleManager appLifecycle;
+    private static IReportingManager reportingManager;
 
-    @BeforeSuite
+    // ---------- Report Path ----------
+    private static String timestampedReportPath() {
+        return "reports/ExtentReport_" + 
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")) + ".html";
+    }
+
+    public static String getCurrentReportPath() { return timestampedReportPath(); }
+
+    // ---------- Suite Setup ----------
+    @BeforeSuite(alwaysRun = true)
     public void setupSuite() {
-        logger.info("🚀 Starting Mobile Test Suite...");
-        String reportPath = getTimestampedReportPath();
-        logger.info("📊 ExtentReport will be saved to: {}", reportPath);
+        String reportPath = timestampedReportPath();
+        logger.info("🚀 Starting Mobile Test Suite | Report: {}", reportPath);
         reportingManager = new ExtentReportingManager();
         reportingManager.initializeReport(reportPath);
     }
 
-    @BeforeClass
+    // ---------- Class Setup ----------
+    @BeforeClass(alwaysRun = true)
     public void setupClass() {
         driver = DependencyManager.getInstance().getDriverManager().initializeAndGetDriver();
-        
-        // Get app configuration for lifecycle management
-        String appPackage = DependencyManager.getInstance().getConfigurationManager()
-                .getProperty("appPackage", "com.netbiscuits.bild.android");
-        String appActivity = DependencyManager.getInstance().getConfigurationManager()
-                .getProperty("appActivity", "de.bild.android.app.MainActivity");
-        
-        appLifecycle = new AppLifecycleManager(driver, appPackage, appActivity);
+
+        var config = DependencyManager.getInstance().getConfigurationManager();
+        appLifecycle = new AppLifecycleManager(
+                driver,
+                config.getProperty("appPackage", "com.netbiscuits.bild.android"),
+                config.getProperty("appActivity", "de.bild.android.app.MainActivity")
+        );
         appLifecycle.ensureAppIsRunning();
     }
 
-    @BeforeMethod
+    // ---------- Test Setup ----------
+    @BeforeMethod(alwaysRun = true)
     public void setupTest(Method method) {
-        String testName = method.getName();
-        String description = getTestDescription(method);
-        test = reportingManager.createTest(testName, description);
+        String name = method.getName();
+        String desc = getTestDescription(method);
+        test = reportingManager.createTest(name, desc);
+        logger.info("🧩 Starting test: {}", name);
     }
 
-    @AfterMethod
+    // ---------- Test Teardown ----------
+    @AfterMethod(alwaysRun = true)
     public void teardownTest(ITestResult result) {
         if (test == null) return;
-        String methodName = result.getMethod().getMethodName();
+
+        String method = result.getMethod().getMethodName();
+        String status = "";
+
+        try {
+            String screenshotPath = reportingManager.captureScreenshot(driver, method,
+                    result.getStatus() == ITestResult.SUCCESS ? "PASS" :
+                    result.getStatus() == ITestResult.FAILURE ? "FAILURE" : "SKIP");
+
+            if (screenshotPath != null) {
+                test.addScreenCaptureFromPath(screenshotPath);
+                logger.info("📸 Screenshot attached: {}", screenshotPath);
+            } else if (result.getStatus() == ITestResult.FAILURE) {
+                // fallback base64 screenshot
+                String base64 = TestReportingUtils.captureScreenshotAsBase64(driver);
+                test.addScreenCaptureFromBase64String(base64);
+            }
+        } catch (Exception e) {
+            logger.warn("⚠️ Screenshot capture failed: {}", e.getMessage());
+        }
 
         switch (result.getStatus()) {
             case ITestResult.SUCCESS:
-                try {
-                    // Capture screenshot for passed tests as well
-                    String passScreenshot = reportingManager.captureScreenshot(driver, methodName, "PASS");
-                    logger.info("Pass screenshot captured: {}", passScreenshot);
-                    if (passScreenshot != null) {
-                        test.addScreenCaptureFromPath(passScreenshot);
-                        logger.info("Pass screenshot attached to report: {}", passScreenshot);
-                    }
-                } catch (Exception e) {
-                    logger.warn("Failed to capture pass screenshot: {}", e.getMessage());
-                }
-                reportingManager.logPass(test, "✅ Test passed successfully");
+                reportingManager.logPass(test, "✅ Test passed");
+                status = "PASSED";
                 break;
-
             case ITestResult.FAILURE:
-                try {
-                    String failScreenshot = reportingManager.captureScreenshot(driver, methodName, "FAILURE");
-                    logger.info("Failure screenshot captured: {}", failScreenshot);
-                    if (failScreenshot != null) {
-                        test.addScreenCaptureFromPath(failScreenshot);
-                        logger.info("Failure screenshot attached to report: {}", failScreenshot);
-                    } else {
-                        // Fallback to base64 screenshot
-                        try {
-                            String base64Screenshot = TestReportingUtils.captureScreenshotAsBase64(driver);
-                            test.addScreenCaptureFromBase64String(base64Screenshot);
-                            logger.info("Base64 screenshot attached to report");
-                        } catch (Exception e2) {
-                            logger.error("Failed to attach base64 screenshot: {}", e2.getMessage());
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.error("Failed to capture or attach failure screenshot: {}", e.getMessage());
-                }
                 reportingManager.logFail(test, "❌ " + result.getThrowable());
+                status = "FAILED";
                 break;
-
             case ITestResult.SKIP:
                 reportingManager.logSkip(test, "⏭️ Test skipped");
+                status = "SKIPPED";
                 break;
         }
-    }
-    @AfterClass
-    public void teardownClass() {
-        DependencyManager.getInstance().getDriverManager().quitDriver();
+        logger.info("🧾 Test {} {}", method, status);
     }
 
-    @AfterSuite
+    // ---------- Class & Suite Teardown ----------
+    @AfterClass(alwaysRun = true)
+    public void teardownClass() {
+        DependencyManager.getInstance().getDriverManager().quitDriver();
+        logger.info("📱 Driver closed for class {}", getClass().getSimpleName());
+    }
+
+    @AfterSuite(alwaysRun = true)
     public void teardownSuite() {
         reportingManager.flush();
+        logger.info("📊 Extent report flushed and suite completed.");
     }
+
+    // ---------- Helpers ----------
     private String getTestDescription(Method method) {
-        Test testAnnotation = method.getAnnotation(Test.class);
+        var testAnnotation = method.getAnnotation(org.testng.annotations.Test.class);
         return (testAnnotation != null && !testAnnotation.description().isEmpty())
                 ? testAnnotation.description()
                 : "Test method: " + method.getName();
     }
-    
-    /**
-     * Log test step with ExtentReports integration
-     */
+
     protected void logTestStep(String message) {
-        if (test != null) {
-            test.info(message);
-        }
+        if (test != null) test.info(message);
         logger.info(message);
     }
-    
-    /**
-     * Assert with logging integration
-     */
+
     protected void assertWithLogging(boolean condition, String message) {
-        if (condition) {
-            logTestStep("✅ Assertion passed: " + message);
-        } else {
-            logTestStep("❌ Assertion failed: " + message);
-            throw new AssertionError(message);
-        }
+        logTestStep((condition ? "✅ Passed: " : "❌ Failed: ") + message);
+        if (!condition) throw new AssertionError(message);
     }
 }
