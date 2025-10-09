@@ -42,10 +42,10 @@ jobs:
         
     - name: Install Appium Server
       run: |
-         npm uninstall -g appium
+         npm uninstall -g appium || true
          npm cache clean --force
-         npm install -g appium@2.23.0
-         appium driver install uiautomator2@3.0.4
+         npm install -g appium@2.5.2
+         appium driver install uiautomator2
         
     - name: Verify Appium Installation
       run: |
