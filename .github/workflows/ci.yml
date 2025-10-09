@@ -1,4 +1,4 @@
-name: BILD Mobile Test Suite CI
+name: BILD Mobile Test Suite CI - Only for Android
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
         distribution: 'temurin'
         
     - name: Cache Maven Dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.m2
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
@@ -57,7 +57,7 @@ jobs:
         sudo udevadm trigger --name-match=kvm
         
     - name: AVD Cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: avd-cache
       with:
         path: |
@@ -180,7 +180,7 @@ jobs:
           mvn test -Dtest=ImprovedBildHomePageTest -Dcapabilities.file=capabilities-ci.properties -Dframework.file=framework-ci.properties -q
           
     - name: Upload Test Reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()  # Upload reports even if tests fail
       with:
         name: test-reports-api${{ matrix.api-level }}
