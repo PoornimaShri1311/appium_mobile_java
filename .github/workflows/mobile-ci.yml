@@ -60,15 +60,36 @@ jobs:
     - name: Load capabilities.properties
       id: load_cap
       run: |
-        echo "Loading Android capabilities..."
-        while IFS='=' read -r key value
-        do
-          if [[ ! -z "$key" && ! "$key" =~ ^# ]]; then
-            key=$(echo "$key" | tr -d ' ')
-            value=$(echo "$value" | tr -d ' ')
-            echo "${key}=${value}" >> $GITHUB_ENV
-          fi
-        done < src/test/resources/capabilities.properties
+        CAP_FILE="src/test/resources/capabilities.properties"
+        if [ -f "$CAP_FILE" ]; then
+          echo "Loading Android capabilities..."
+          while IFS='=' read -r key value
+          do
+            if [[ ! -z "$key" && ! "$key" =~ ^# ]]; then
+              key=$(echo "$key" | tr -d ' ')
+              value=$(echo "$value" | tr -d ' ')
+              echo "${key}=${value}" >> $GITHUB_ENV
+            fi
+          done < $CAP_FILE
+        else
+          echo "No capabilities.properties found, using defaults..."
+          echo "appPackage=com.example.app" >> $GITHUB_ENV
+          echo "appActivity=.MainActivity" >> $GITHUB_ENV
+        fi
+
+
+    # - name: Load capabilities.properties
+    #   id: load_cap1
+    #   run: |
+    #     echo "Loading Android capabilities..."
+    #     while IFS='=' read -r key value
+    #     do
+    #       if [[ ! -z "$key" && ! "$key" =~ ^# ]]; then
+    #         key=$(echo "$key" | tr -d ' ')
+    #         value=$(echo "$value" | tr -d ' ')
+    #         echo "${key}=${value}" >> $GITHUB_ENV
+    #       fi
+    #     done < src/test/resources/capabilities.properties
 
     - name: Android Emulator Setup (if emulator selected)
       if: ${{ github.event.inputs.platform == 'android' && github.event.inputs.deviceType == 'emulator' }}
