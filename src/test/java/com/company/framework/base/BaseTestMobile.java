@@ -36,8 +36,9 @@ public abstract class BaseTestMobile {
     public void setupSuite() {
         String reportPath = timestampedReportPath();
         logger.info("🚀 Starting Mobile Test Suite | Report: {}", reportPath);
-        MobileDeviceUtils.startAppiumServer();
-        logger.info("📱 Appium server started.");
+        // Appium starts in Github Actions already. So removing this part.
+        // MobileDeviceUtils.startAppiumServer();
+        // logger.info("📱 Appium server started.");
         reportingManager = new ExtentReportingManager();
         reportingManager.initializeReport(reportPath);
     }
