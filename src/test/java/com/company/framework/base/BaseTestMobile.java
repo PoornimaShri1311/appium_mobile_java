@@ -3,6 +3,7 @@ package com.company.framework.base;
 import com.aventstack.extentreports.ExtentTest;
 import com.company.framework.interfaces.reporting.IReportingManager;
 import com.company.framework.managers.*;
+import com.company.framework.utils.MobileDeviceUtils;
 import com.company.framework.utils.TestReportingUtils;
 import io.appium.java_client.AppiumDriver;
 import org.apache.logging.log4j.LogManager;
@@ -35,6 +36,8 @@ public abstract class BaseTestMobile {
     public void setupSuite() {
         String reportPath = timestampedReportPath();
         logger.info("🚀 Starting Mobile Test Suite | Report: {}", reportPath);
+        MobileDeviceUtils.startAppiumServer();
+        logger.info("📱 Appium server started.");
         reportingManager = new ExtentReportingManager();
         reportingManager.initializeReport(reportPath);
     }
@@ -115,6 +118,8 @@ public abstract class BaseTestMobile {
     public void teardownSuite() {
         reportingManager.flush();
         logger.info("📊 Extent report flushed and suite completed.");
+        MobileDeviceUtils.stopAppiumServer();
+        logger.info("🛑 Appium server stopped.");
     }
 
     // ---------- Helpers ----------

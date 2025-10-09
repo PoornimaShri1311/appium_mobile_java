@@ -4,10 +4,7 @@ on:
   push:
     branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
-  schedule:
-    # Run tests daily at 6 AM UTC
-    - cron: '0 6 * * *'
+    branches: [ main, develop ]
   workflow_dispatch:
     inputs:
       platform:
@@ -18,50 +15,22 @@ on:
         options:
         - android
         - ios
-        - both
-      test_suite:
-        description: 'Test suite to run'
-        required: false
-        default: 'smoke'
+      deviceType:
+        description: 'Which Android device to run on'
+        required: true
+        default: 'physical'
         type: choice
         options:
-        - smoke
-        - regression
-        - full
+        - physical
+        - emulator
 
 jobs:
-  # Matrix strategy for multiple device configurations
-  test-matrix:
-    name: Test on ${{ matrix.platform }} - ${{ matrix.device }}
-    runs-on: ${{ matrix.os }}
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Android configurations
-          - platform: android
-            os: ubuntu-latest
-            device: "Pixel_7_API_33"
-            api_level: 33
-            arch: x86_64
-          - platform: android
-            os: ubuntu-latest
-            device: "Pixel_4_API_30"
-            api_level: 30
-            arch: x86_64
-          # iOS configurations (macOS only)
-          - platform: ios
-            os: macos-latest
-            device: "iPhone 15"
-            ios_version: "17.0"
-          - platform: ios
-            os: macos-latest
-            device: "iPhone 14"
-            ios_version: "16.4"
+  mobile-tests:
+    name: Mobile Tests
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout Code
       uses: actions/checkout@v4
 
     - name: Set up JDK 11
@@ -71,170 +40,102 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Set up Node.js (for Appium)
+    - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
+        cache: npm
 
-    - name: Install Appium and drivers
+    - name: Install Appium & Drivers
       run: |
         npm install -g appium@2.11.1
         npm install -g @appium/doctor
-        
-        # Install drivers with specific versions
         appium driver install uiautomator2@3.0.4
-        if [[ "${{ matrix.platform }}" == "ios" ]]; then
+        if [ "${{ github.event.inputs.platform }}" == "ios" ]; then
           appium driver install xcuitest@5.0.0
         fi
-        
-        # Verify installation
         appium driver list --installed
         appium --version
 
-    # Android specific setup
-    - name: Set up Android SDK (Android only)
-      if: matrix.platform == 'android'
-      uses: android-actions/setup-android@v3
-      
-    - name: Create Android AVD (Android only)
-      if: matrix.platform == 'android'
+    - name: Load capabilities.properties
+      id: load_cap
       run: |
-        echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "system-images;android-${{ matrix.api_level }};google_apis;${{ matrix.arch }}"
-        echo "no" | $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager create avd --force --name test --abi google_apis/${{ matrix.arch }} --package "system-images;android-${{ matrix.api_level }};google_apis;${{ matrix.arch }}"
+        echo "Loading Android capabilities..."
+        while IFS='=' read -r key value
+        do
+          if [[ ! -z "$key" && ! "$key" =~ ^# ]]; then
+            key=$(echo "$key" | tr -d ' ')
+            value=$(echo "$value" | tr -d ' ')
+            echo "${key}=${value}" >> $GITHUB_ENV
+          fi
+        done < src/test/resources/capabilities.properties
 
-    - name: Start Android Emulator (Android only)
-      if: matrix.platform == 'android'
+    - name: Android Emulator Setup (if emulator selected)
+      if: ${{ github.event.inputs.platform == 'android' && github.event.inputs.deviceType == 'emulator' }}
       run: |
-        echo "Starting Android emulator..."
-        $ANDROID_HOME/emulator/emulator -avd test -no-audio -no-window -gpu swiftshader_indirect -camera-back none -camera-front none &
-        
-        # Wait for device with timeout
+        echo "Creating and starting emulator..."
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+          "system-images;android-30;google_apis;x86_64"
+        echo "no" | $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager create avd \
+          --force --name tablet_emulator \
+          --package "system-images;android-30;google_apis;x86_64"
+        $ANDROID_HOME/emulator/emulator -avd tablet_emulator -no-window -no-audio -gpu swiftshader_indirect &
         timeout 300 adb wait-for-device
-        
-        # Wait for boot completion with extended timeout
-        timeout 600 bash -c 'while [[ -z $(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r") ]]; do echo "Waiting for boot..."; sleep 5; done'
-        
-        # Additional stability wait
-        sleep 30
-        
-        # Verify emulator is ready
-        adb shell input keyevent 82  # Unlock screen
+        timeout 600 bash -c 'while [[ -z $(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r") ]]; do sleep 5; done'
+        adb shell input keyevent 82
         adb devices -l
-
-    # iOS specific setup
-    - name: Set up iOS Simulator (iOS only)
-      if: matrix.platform == 'ios'
-      run: |
-        IOS_VERSION=$(echo "${{ matrix.ios_version }}" | sed 's/\./-/g')
-        xcrun simctl create "Test iPhone" "com.apple.CoreSimulator.SimDeviceType.${{ matrix.device }}" "com.apple.CoreSimulator.SimRuntime.iOS-${IOS_VERSION}"
-        DEVICE_ID=$(xcrun simctl list devices | grep "Test iPhone" | awk '{print $3}' | tr -d '()')
-        xcrun simctl boot $DEVICE_ID
 
     - name: Start Appium Server
       run: |
-        appium server --log-level info &
+        appium server --port 4723 --base-path /wd/hub --allow-cors &
         sleep 10
 
-    - name: Run Appium Doctor
-      run: appium-doctor --android
-
-    - name: Cache Maven dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
-
-    - name: Run Framework Tests (CI Mode)
+    - name: Select Device Capabilities
       run: |
-        # Set environment variables for CI
-        export CI_BUILD=true
-        export PLATFORM=${{ matrix.platform }}
-        
-        # Use CI-specific test suite that doesn't require BILD app
+        echo "Selecting capabilities based on deviceType=${{ github.event.inputs.deviceType }}"
+        if [ "${{ github.event.inputs.deviceType }}" == "physical" ]; then
+          export DEVICE_NAME="$deviceName"
+          export UDID="$udid"
+        else
+          export DEVICE_NAME="emulator-5554"
+          export UDID="emulator-5554"
+        fi
+        echo "DEVICE_NAME=$DEVICE_NAME" >> $GITHUB_ENV
+        echo "UDID=$UDID" >> $GITHUB_ENV
+        echo "App Package: $appPackage, App Activity: $appActivity"
+
+    - name: Run Mobile Tests
+      run: |
+        echo "Running tests on $DEVICE_NAME ($UDID)"
         mvn clean test \
           -DsuiteXmlFile=src/test/resources/ci-testng.xml \
-          -Dplatform=${{ matrix.platform }} \
-          -DdeviceName="${{ matrix.device }}" \
-          -DplatformVersion="${{ matrix.api_level || matrix.ios_version }}" \
+          -Dplatform=${{ github.event.inputs.platform }} \
+          -DdeviceName="$DEVICE_NAME" \
+          -Dudid="$UDID" \
+          -DappPackage="$appPackage" \
+          -DappActivity="$appActivity" \
           -DthreadCount=1 \
           -Dappium.server.host=127.0.0.1 \
           -Dappium.server.port=4723 \
-          -Dmaven.test.failure.ignore=true \
           -Dtest.retry.count=2 \
           -Dci.mode=true
-
-    - name: Generate Accessibility Report
-      if: always()
-      run: |
-        mvn exec:java -Dexec.mainClass="utils.AccessibilityReportGenerator" -Dexec.args="reports/"
 
     - name: Upload Test Reports
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: test-reports-${{ matrix.platform }}-${{ matrix.device }}
+        name: mobile-test-reports
         path: |
           reports/
           screenshots/
           logs/
         retention-days: 30
 
-    - name: Upload Accessibility Reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: accessibility-reports-${{ matrix.platform }}-${{ matrix.device }}
-        path: reports/accessibility/
-        retention-days: 30
-
     - name: Publish Test Results
       uses: dorny/test-reporter@v1
       if: always()
       with:
-        name: Test Results (${{ matrix.platform }} - ${{ matrix.device }})
+        name: Mobile Test Results
         path: 'target/surefire-reports/TEST-*.xml'
         reporter: java-junit
         fail-on-error: true
-
-  # Aggregate results and notifications
-  test-summary:
-    needs: test-matrix
-    runs-on: ubuntu-latest
-    if: always()
-    
-    steps:
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      
-    - name: Generate Summary Report
-      run: |
-        echo "# Test Execution Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| Platform | Device | Status |" >> $GITHUB_STEP_SUMMARY
-        echo "|----------|--------|--------|" >> $GITHUB_STEP_SUMMARY
-        
-        # Process results (simplified - you'd parse actual test results)
-        if [[ "${{ needs.test-matrix.result }}" == "success" ]]; then
-          echo "| Android | Pixel 7 API 33 | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Android | Pixel 4 API 30 | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| iOS | iPhone 15 | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| iOS | iPhone 14 | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "| Some tests | Failed | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
-        fi
-
-    - name: Slack Notification
-      if: always() && github.ref == 'refs/heads/main'
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ job.status }}
-        text: |
-          Mobile Test Automation Results:
-          - Platform Matrix: ${{ needs.test-matrix.result }}
-          - Commit: ${{ github.sha }}
-          - Author: ${{ github.actor }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
