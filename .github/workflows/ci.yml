@@ -257,3 +257,4 @@ jobs:
           echo "❌ Some BILD mobile tests failed. Check the artifacts for details."
           exit 1
         fi
+        
