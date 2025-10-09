@@ -46,8 +46,7 @@ jobs:
          npm cache clean --force
          npm install -g appium@2.5.2
          appium driver install uiautomator2@3.3.0
-
-        
+      timeout-minutes: 15        
     - name: Verify Appium Installation
       run: |
         appium --version
