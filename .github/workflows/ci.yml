@@ -43,6 +43,7 @@ jobs:
     - name: Install Appium Server
       run: |
          npm uninstall -g appium
+         npm cache clean --force
          npm install -g appium@2.23.0
          appium driver install uiautomator2@3.0.4
         
